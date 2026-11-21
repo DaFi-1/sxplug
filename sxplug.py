@@ -135,3 +135,35 @@ class PluginManager:
             except Exception as e:
                 logging.warning("Warning creating .venv for %s: %s", repo_name, e)
         return venv_dir
+
+    def _check_requirements(self, target_dir: str, repo_name: str) -> None:
+        req_file = os.path.join(target_dir, "requirements.txt")
+        if not os.path.exists(req_file):
+            return
+        venv_dir = self._ensure_venv(target_dir, repo_name)
+        hash_file = os.path.join(venv_dir, ".requirements.hash")
+        import hashlib, logging
+        try:
+            with open(req_file, "rb") as f:
+                cur_hash = hashlib.sha256(f.read()).hexdigest()
+        except Exception:
+            cur_hash = ""
+        if cur_hash and os.path.exists(hash_file):
+            try:
+                with open(hash_file, "r") as f:
+                    if f.read().strip() == cur_hash:
+                        return
+            except Exception:
+                pass
+        pip_path = os.path.join(venv_dir, "bin", "pip")
+        cmd = [pip_path if os.path.exists(pip_path) else sys.executable, "install", "-r", req_file, "--quiet"]
+        if not os.path.exists(pip_path):
+            cmd = [sys.executable, "-m", "pip", "install", "-r", req_file, "--quiet"]
+        logging.info("⚙️ [sxplug] Installing/updating dependencies for %s in dedicated .venv...", repo_name)
+        try:
+            subprocess.run(cmd, check=False)
+            if cur_hash:
+                with open(hash_file, "w") as f:
+                    f.write(cur_hash)
+        except Exception as e:
+            logging.warning("Warning installing requirements for %s: %s", repo_name, e)
