@@ -28,3 +28,8 @@ def test_entrypoint_resolution_priority(tmp_path: Path):
     bot_dir = tmp_path / "CustomBot"
     bot_dir.mkdir()
     assert manager._find_entrypoint(str(bot_dir), "CustomBot") is None
+
+def test_requirements_caching_and_invalidation(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    manager = sx.PluginManager(sx.hub, plugins_dir=str(tmp_path))
+    bot_dir = tmp_path / "CachedBot"
+    bot_dir.mkdir()
