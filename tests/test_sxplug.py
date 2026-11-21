@@ -33,3 +33,10 @@ def test_requirements_caching_and_invalidation(tmp_path: Path, monkeypatch: pyte
     manager = sx.PluginManager(sx.hub, plugins_dir=str(tmp_path))
     bot_dir = tmp_path / "CachedBot"
     bot_dir.mkdir()
+
+def test_plugin_fault_tolerance(tmp_path: Path):
+    manager = sx.PluginManager(sx.hub, plugins_dir=str(tmp_path))
+    bad_dir = tmp_path / "BrokenBot"
+    bad_dir.mkdir()
+    (bad_dir / "plugin.py").write_text("def broken syntax (")
+    assert manager.install_or_load(str(bad_dir)) is False
