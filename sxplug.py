@@ -39,3 +39,13 @@ def _shorthand_from_url(url: str) -> str:
         if len(parts) == 2:
             return clean
     return _repo_name_from_url(url)
+
+def _load_avatar(path: str = AVATAR_PATH):
+    if os.path.exists(path):
+        try:
+            with open(path, "rb") as f:
+                import base64
+                return f"data:image/jpg;base64,{base64.b64encode(f.read()).decode('utf-8')}"
+        except Exception:
+            pass
+    return None
