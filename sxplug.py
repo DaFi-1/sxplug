@@ -98,3 +98,22 @@ class SxPlugClient(Bot):
                 import logging
                 logging.warning("Warning updating profile on SMP: %s", e)
         return False
+
+hub = SxPlugClient(
+    profile=BotProfile(
+        display_name="sxplug",
+        full_name="",
+        short_descr="> Plugin Manager for SimpleX Chat
+> Powered by sxplug Hub",
+        image=_load_avatar(),
+    ),
+    db=SqliteDb(file_prefix=os.path.join(DATA_DIR, "my_bot")),
+    create_address=False,
+    update_address=False,
+    update_profile=True,
+    allow_files=True,
+    commands=[
+        BotCommand(keyword="plugin-list", label="List installed plugins in a table"),
+        BotCommand(keyword="plugin-help", label="sxplug overview and guide"),
+    ],
+)
