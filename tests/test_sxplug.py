@@ -1,0 +1,12 @@
+"""Unit tests for sxplug."""
+from __future__ import annotations
+import os, sys, pytest
+from pathlib import Path
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
+import sxplug as sx
+
+def test_normalize_and_repo_name():
+    assert sx._normalize_repo_url("DaFi-1/DinoBot") == "https://github.com/DaFi-1/DinoBot.git"
+    assert sx._repo_name_from_url("DaFi-1/DinoBot") == "DinoBot"
