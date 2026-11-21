@@ -22,3 +22,9 @@ def test_lazy_client_permissions_and_sync():
     assert wire["peerType"] == "bot"
     assert wire["preferences"]["reactions"]["allow"] == "no"
     assert wire["preferences"]["files"]["allow"] == "yes"
+
+def test_entrypoint_resolution_priority(tmp_path: Path):
+    manager = sx.PluginManager(sx.hub, plugins_dir=str(tmp_path))
+    bot_dir = tmp_path / "CustomBot"
+    bot_dir.mkdir()
+    assert manager._find_entrypoint(str(bot_dir), "CustomBot") is None
