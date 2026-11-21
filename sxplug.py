@@ -182,3 +182,50 @@ class PluginManager:
             if f.endswith(".py") and not f.startswith("__"):
                 return os.path.join(target_dir, f)
         return None
+
+    def _load_plugin_module(self, target_dir: str, repo_name: str, repo_url: str) -> bool:
+        entry_file = self._find_entrypoint(target_dir, repo_name)
+        import logging, glob, site, importlib.util
+        if not entry_file:
+            logging.warning("No entrypoint executable file found in %s", target_dir)
+            return False
+        for sp in glob.glob(os.path.join(target_dir, ".venv", "lib", "python*", "site-packages")):
+            if os.path.isdir(sp):
+                site.addsitedir(sp)
+        if target_dir not in sys.path:
+            sys.path.insert(0, target_dir)
+        mod_name = f"sxplug_{repo_name.lower()}"
+        try:
+            spec = importlib.util.spec_from_file_location(mod_name, entry_file)
+            if not spec or not spec.loader:
+                return False
+            mod = importlib.util.module_from_spec(spec)
+            sys.modules[mod_name] = mod
+            spec.loader.exec_module(mod)
+            commands_registered = []
+            if hasattr(mod, "setup") and callable(mod.setup):
+                mod.setup(self.client)
+            sub_bot = getattr(mod, "bot", None)
+            if sub_bot and isinstance(sub_bot, Bot):
+                for item in getattr(sub_bot, "_command_handlers", []):
+                    self.client._command_handlers.append(item)
+                    kw = item[0][0] if isinstance(item[0], (tuple, list)) else str(item[0])
+                    commands_registered.append(kw)
+                existing_kw = {c.keyword for c in self.client._commands}
+                for c in getattr(sub_bot, "_commands", []):
+                    if c.keyword not in existing_kw:
+                        self.client._commands.append(c)
+                        existing_kw.add(c.keyword)
+                setattr(mod, "bot", self.client)
+            self.client.plugin_registry[repo_name] = {
+                "name": repo_name,
+                "url": repo_url,
+                "path": target_dir,
+                "entry": os.path.basename(entry_file),
+                "commands": commands_registered,
+            }
+            logging.info("⚡ [sxplug] Plugin '%s' enabled! (%d commands)", repo_name, len(commands_registered))
+            return True
+        except Exception as e:
+            logging.error("❌ Error initializing plugin %s: %s", repo_name, e, exc_info=True)
+            return False
