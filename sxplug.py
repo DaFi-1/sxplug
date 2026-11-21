@@ -5,6 +5,27 @@ import os
 import subprocess
 import sys
 
+def _bootstrap_root_env() -> None:
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    root_venv = os.path.join(base_dir, ".venv")
+    venv_py = os.path.join(root_venv, "bin", "python3")
+    venv_pip = os.path.join(root_venv, "bin", "pip")
+    req_file = os.path.join(base_dir, "requirements.txt")
+
+    if not hasattr(sys, "real_prefix") and (sys.base_prefix == sys.prefix):
+        if not os.path.exists(venv_py):
+            print("🌱 [sxplug] Bootstrapping root environment (.venv)...")
+            subprocess.run([sys.executable, "-m", "venv", root_venv], check=True)
+            if os.path.exists(req_file):
+                print("⚙️ [sxplug] Installing base requirements...")
+                subprocess.run([venv_pip, "install", "-r", req_file, "--quiet"], check=True)
+        os.execv(venv_py, [venv_py, os.path.abspath(__file__)] + sys.argv[1:])
+
+if __name__ == "__main__" or "simplex_chat" not in sys.modules:
+    try:
+        import simplex_chat  # noqa: F401
+    except ImportError:
+        _bootstrap_root_env()
 PLUGINS: list[str] = [
     "DaFi-1/DinoBot",
 ]
