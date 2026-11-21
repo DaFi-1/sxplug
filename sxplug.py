@@ -167,3 +167,18 @@ class PluginManager:
                     f.write(cur_hash)
         except Exception as e:
             logging.warning("Warning installing requirements for %s: %s", repo_name, e)
+
+    def _find_entrypoint(self, target_dir: str, repo_name: str):
+        candidates = [
+            os.path.join(target_dir, "plugin.py"),
+            os.path.join(target_dir, f"{repo_name}.py"),
+            os.path.join(target_dir, "bot.py"),
+            os.path.join(target_dir, "main.py"),
+        ]
+        for c in candidates:
+            if os.path.exists(c):
+                return c
+        for f in os.listdir(target_dir):
+            if f.endswith(".py") and not f.startswith("__"):
+                return os.path.join(target_dir, f)
+        return None
