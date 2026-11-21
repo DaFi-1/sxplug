@@ -70,3 +70,18 @@ def _load_avatar(path: str = AVATAR_PATH):
         except Exception:
             pass
     return None
+
+from simplex_chat import Bot, BotCommand, BotProfile, Message, ParsedCommand, SqliteDb, TextMessage
+
+class SxPlugClient(Bot):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.plugin_registry = {}
+
+    def _profile_to_wire(self):
+        p = super()._profile_to_wire()
+        prefs = p.setdefault("preferences", {})
+        prefs.update({k: {"allow": "no"} for k in ("reactions", "calls", "voice", "timedMessages", "sessions")})
+        prefs.update({k: {"allow": "yes"} for k in ("files", "fullDelete")})
+        p["peerType"] = "bot"
+        return p
