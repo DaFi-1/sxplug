@@ -27,3 +27,15 @@ def _normalize_repo_url(spec: str) -> str:
 
 def _repo_name_from_url(url: str) -> str:
     return url.rstrip("/").removesuffix(".git").split("/")[-1]
+
+def _shorthand_from_url(url: str) -> str:
+    clean = url.strip().removesuffix(".git").rstrip("/")
+    if "github.com/" in clean:
+        parts = clean.split("github.com/")[-1].split("/")
+        if len(parts) >= 2:
+            return f"{parts[-2]}/{parts[-1]}"
+    if "/" in clean and not clean.startswith(("http", "git@")):
+        parts = clean.split("/")
+        if len(parts) == 2:
+            return clean
+    return _repo_name_from_url(url)
