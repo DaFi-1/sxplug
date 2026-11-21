@@ -1,4 +1,24 @@
-# Python virtual environments
+# Python virtual environments & caches
 .venv/
 __pycache__/
 *.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+.requirements.hash
+
+# SimpleX Chat data, logs and private persistent keys
+data/*
+!data/.gitkeep
+
+# Cloned plugins (managed via PLUGINS list in sxplug.py)
+plugins/*
+!plugins/.gitkeep
+
+# Legacy binary directory
+bin/
+
+# Temporary and OS files
+*.log
+.DS_Store
+Thumbs.db
