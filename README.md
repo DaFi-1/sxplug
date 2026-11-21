@@ -1,61 +1,59 @@
 # ⚡ sxplug
 
-Gerenciador modular e instalador de bots plug-and-play para a rede **SimpleX Chat** em um único arquivo.
+Single-file modular plugin manager and installer for **SimpleX Chat**.
 
-Inspirado na arquitetura do **LazyVim**, o **sxplug** permite adicionar múltiplos bots a um único endereço fixo do SimpleX Chat apenas listando os repositórios do GitHub.
+Inspired by **LazyVim**, **sxplug** allows running multiple bots under a single fixed SimpleX Chat address simply by declaring GitHub repositories in a configuration list.
 
 ---
 
-## 🚀 Como Usar (Zero Setup)
+## 🚀 Quickstart (Zero Setup)
 
-1. **Clone o repositório:**
+1. **Clone the repository:**
 ```bash
-git clone <url-do-repositorio-sxplug>
+git clone https://github.com/DaFi-1/sxplug.git
 cd sxplug
 ```
 
-2. **Configure seus bots em `sxplug.py`:**
-Basta declarar os bots pelo formato simplificado `usuario/repositorio`:
+2. **Configure your bots in `sxplug.py`:**
+Simply list your bots using `user/repo` shorthand (or full Git URL):
 
 ```python
 PLUGINS: list[str] = [
     "DaFi-1/DinoBot",
-    # "usuario/outro-bot",
+    # "user/another-bot",
 ]
 ```
 
-3. **Inicie o gerenciador com um único comando:**
+3. **Start sxplug with a single command:**
 ```bash
 python3 sxplug.py
 ```
 
-> **✨ Auto-Bootstrap**: O `sxplug` detecta automaticamente se o ambiente virtual raiz existe. Se não existir, ele cria o `.venv`, instala as dependências base e se auto-executa sozinho. Nos próximos inícios, ele pula direto para o boot instantâneo!
-
-### O que o `sxplug` faz automaticamente:
-1. **Auto-Clone**: Clona os repositórios listados para a pasta `./plugins/<NomeDoRepo>`.
-2. **Ambiente Virtual Isolado**: Cria um `.venv` dedicado dentro da pasta de cada plugin e instala as dependências do `requirements.txt` sem conflitos de versão.
-3. **Auto-Discovery**: Descobre os comandos e manipuladores do bot e conecta-os ao SimpleX.
-4. **Endereço Fixo e Persistente**: Mantém o mesmo endereço SMP e perfil em `./data/my_bot_chat.db`.
-5. **Comandos Nativos no Chat**:
-   - `/plugin-list`: Lista todos os bots instalados em uma tabela Markdown.
-   - `/plugin-help`: Exibe guia e ajuda do sxplug.
+> **✨ Auto-Bootstrap**: `sxplug` automatically detects if the root virtual environment exists. If not, it creates `.venv`, installs required dependencies, and restarts itself inside the virtualenv. On subsequent runs, it boots instantly!
 
 ---
 
-## 📁 Estrutura de Diretórios
+### What `sxplug` does automatically:
+1. **Auto-Clone**: Clones listed repositories to `./plugins/<RepoName>`.
+2. **Dedicated Virtual Environment**: Creates an isolated `.venv` per plugin and installs `requirements.txt` with zero version conflicts.
+3. **Instant Boot Cache**: Computes SHA-256 hashes of `requirements.txt` to skip redundant pip checks and start in sub-milliseconds.
+4. **Auto-Discovery**: Resolves entrypoint files and registers all commands dynamically.
+5. **Fixed Identity**: Keeps persistent keys and SMP address in `./data/my_bot_chat.db`.
+6. **Built-in Chat Commands**:
+   - `/plugin-list`: Display installed bots in a clean Markdown table.
+   - `/plugin-help`: Display overview and usage instructions.
+
+---
+
+## 📁 Directory Structure
 
 ```text
 sxplug/
-├── sxplug.py                   # Gerenciador central de plugins
-├── requirements.txt            # Dependências básicas do hub
-├── README.md                   # Documentação
-├── assets/                     # Avatar padrão do hub
-├── data/                       # Chaves e banco de dados persistentes do SimpleX
-└── plugins/                    # Repositórios clonados (cada um com seu próprio .venv)
-    └── DinoBot/                # Plugin #1: Gerenciador de rotinas e tarefas
-        ├── .venv/              # Ambiente virtual isolado do plugin
-        ├── DinoBot.py
-        ├── DinoBot.db
-        ├── assets/
-        └── tests/
+├── sxplug.py                   # Central single-file manager
+├── requirements.txt            # Base dependencies
+├── README.md                   # Quickstart guide
+├── doc.md                      # Full technical specification & developer guide
+├── data/                       # Persistent SimpleX cryptographic keys
+├── tests/                      # Unit test suite
+└── plugins/                    # Isolated cloned plugins (each with its own .venv)
 ```

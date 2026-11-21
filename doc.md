@@ -1,40 +1,40 @@
-# ⚡ sxplug — Documentação e Especificação Técnica
+# ⚡ sxplug — Technical Specification & Documentation
 
-O **sxplug** é um gerenciador modular e instalador de bots plug-and-play em arquivo único para a rede descentralizada **SimpleX Chat**.
-
----
-
-## 1. Introdução & Visão Geral
-
-### 1.1. O que é o `sxplug`?
-O `sxplug` é uma camada de gerenciamento e orquestração de plugins desenvolvida em Python para a rede SimpleX Chat. Ele opera como um **Hub Central** que permite conectar e executar múltiplos bots independentes sob uma única conexão, endereço fixo e perfil SMP, sem necessidade de reconfiguração manual ou complexidade operacional.
-
-### 1.2. Motivação: Por que o `sxplug` foi criado?
-Na arquitetura padrão do SimpleX Chat, cada bot exige:
-- Uma conexão websocket/IPC separada com o core do SimpleX.
-- Um banco de dados de chaves criptográficas (`my_bot_chat.db`).
-- Um endereço SMP próprio gerado para os contatos.
-- Processos separados rodando no sistema operacional para cada funcionalidade.
-
-Isso gerava atrito para usuários e desenvolvedores que queriam disponibilizar múltiplos serviços (gerenciadores, utilitários, automações) para seus contatos em um único perfil. Além disso, a instalação manual exigia clonar múltiplos repositórios, instalar dependências no mesmo ambiente (gerando conflitos de pacotes) e configurar portas/bancos. O `sxplug` resolve esse gargalo unificando o ecossistema.
-
-### 1.3. Inspiração na Filosofia Modular (Estilo LazyVim / Neovim)
-Inspirado na arquitetura do **LazyVim / packer.nvim**, o `sxplug` adota o paradigma declarativo:
-- O usuário apenas lista os plugins desejados pelo padrão `usuario/repositorio` no array `PLUGINS`.
-- Na inicialização, o gerenciador cuida de todo o ciclo: clonagem, preparação de ambiente isolado, instalação de dependências e registro transparente dos comandos.
-
-### 1.4. Características Únicas & Diferenciais
-- **Single-File Hub**: Todo o núcleo do gerenciador reside em um único script legível (`sxplug.py`).
-- **Isolamento Total (`.venv` dedicado)**: Cada plugin possui seu próprio ambiente virtual, eliminando qualquer risco de conflito de versões de bibliotecas entre bots diferentes.
-- **In-Process Dynamic Injection**: Não utiliza processos externos pesados ou IPC frágil; pacotes e comandos são agregados em tempo de execução via `site.addsitedir`.
-- **Endereço e Perfil Únicos e Fixos**: Todos os bots respondem sob a mesma identidade e endereço SMP persistente em `./data/`.
-- **Live Administration via Chat**: Permite atualizar todos os plugins via `git pull` diretamente por comandos nativos no chat (`/plugin-update`).
+**sxplug** is a single-file modular plugin manager and installer for the decentralized **SimpleX Chat** network.
 
 ---
 
-## 2. Arquitetura e Funcionamento do Sistema
+## 1. Introduction & Overview
 
-### 2.1. Visão Geral da Arquitetura
+### 1.1. What is `sxplug`?
+`sxplug` is an orchestration and plugin management layer built in Python for SimpleX Chat. It functions as a **Central Hub** that connects and executes multiple independent bots under a single connection, fixed SMP address, and profile, eliminating manual setup and operational complexity.
+
+### 1.2. Motivation: Why was `sxplug` created?
+In standard SimpleX Chat bot architecture, each bot requires:
+- A separate websocket/IPC connection with the SimpleX core.
+- An independent cryptographic database (`my_bot_chat.db`).
+- A distinct SMP address generated for contacts.
+- Multiple separate OS processes running concurrently.
+
+This creates significant friction for users and developers who want to provide multiple bot capabilities under a single contact profile. Furthermore, manual installation required cloning multiple repos, installing conflicting dependencies in the same environment, and managing multiple databases. `sxplug` unifies the ecosystem into one coherent hub.
+
+### 1.3. Modular Philosophy (LazyVim / Neovim Inspired)
+Inspired by the declarative architecture of **LazyVim / packer.nvim**, `sxplug` adopts a simple declarative approach:
+- Declare desired plugins as `user/repo` shorthands in the `PLUGINS` list.
+- On startup, `sxplug` handles cloning, isolated environment setup, dependency management, and dynamic command discovery automatically.
+
+### 1.4. Key Features & Highlights
+- **Single-File Hub**: The core engine lives in a single, readable Python file (`sxplug.py`).
+- **Dedicated Virtual Environments (`.venv`)**: Every plugin receives its own private `.venv`, preventing version conflicts between bots.
+- **In-Process Dynamic Injection**: Avoids heavy IPC or separate child processes; packages are injected via runtime `site.addsitedir`.
+- **SHA-256 Dependency Caching**: Caches `requirements.txt` state to skip pip invocations, enabling sub-millisecond boots.
+- **Unified Identity**: All bots share the persistent profile and SMP address stored in `./data/`.
+
+---
+
+## 2. Architecture & Runtime Lifecycle
+
+### 2.1. System Architecture
 ```text
                   +-----------------------------------+
                   |      SimpleX Chat Network         |
@@ -50,219 +50,164 @@ Inspirado na arquitetura do **LazyVim / packer.nvim**, o `sxplug` adota o paradi
             v                                               v
 +-----------------------+                       +-----------------------+
 |  Plugin 1 (Folder)    |                       |  Plugin 2 (Folder)    |
-|  - .venv/ (Isolado)   |                       |  - .venv/ (Isolado)   |
+|  - .venv/ (Isolated)  |                       |  - .venv/ (Isolated)  |
 |  - requirements.txt   |                       |  - requirements.txt   |
-|  - Comandos & Handlers|                       |  - Comandos & Handlers|
+|  - Commands & Handlers|                       |  - Commands & Handlers|
 +-----------------------+                       +-----------------------+
 ```
 
-### 2.2. Ciclo de Vida: Do Startup à Execução
-1. **Leitura da Lista `PLUGINS`**: O `sxplug` lê a lista declarada no arquivo principal.
-2. **Normalização da URL**: Converte nomes abreviados em links de clone do Git.
-3. **Auto-Clone**: Clona repositórios ausentes diretamente na pasta `./plugins/<NomeDoRepo>`.
-4. **Setup de `.venv` Dedicado**: Verifica se `./plugins/<NomeDoRepo>/.venv` existe; se não, cria via `python -m venv`.
-5. **Instalação Isolada de Dependências**: Se houver `requirements.txt`, executa o `pip` exclusivo do `.venv` daquele plugin.
-6. **Injeção de Pacotes & Resolução de Módulo**: Adiciona o `site-packages` do plugin ao runtime e importa o arquivo principal.
-7. **Descoberta de Comandos**: Registra todos os manipuladores de comando (`/comando`) no Hub.
-8. **Início do Event Loop**: O Hub conecta à rede SimpleX e começa a processar mensagens.
+### 2.2. Lifecycle: Startup to Execution
+1. **Read `PLUGINS` Configuration**: `sxplug` parses configured plugins.
+2. **Normalize URL**: Converts `user/repo` shorthand into full Git clone URLs.
+3. **Auto-Clone**: Clones missing repositories into `./plugins/<RepoName>`.
+4. **Dedicated `.venv` Setup**: Creates an isolated `.venv` per plugin if missing.
+5. **SHA-256 Dependency Check**: Compares `requirements.txt` hash. Invokes pip only when changes are detected.
+6. **Package Injection & Module Import**: Appends plugin's `site-packages` via `site.addsitedir` and loads the entrypoint file.
+7. **Command Discovery**: Gathers all sub-bot commands into the hub's registry.
+8. **SimpleX Event Loop**: Connects to the network and begins processing incoming messages.
 
-### 2.3. Sintaxe Simplificada (*Shorthand GitHub Syntax*)
-O `sxplug` aceita declarações concisas:
+### 2.3. Shorthand GitHub Syntax
+`sxplug` supports both concise shorthand and full URLs:
 ```python
 PLUGINS: list[str] = [
-    "autor/meu-bot",             # Shorthand -> https://github.com/autor/meu-bot.git
-    "https://github.com/user/bot", # URL HTTPS tradicional
-    "git@github.com:user/bot.git", # URL SSH
+    "author/my-bot",             # Shorthand -> https://github.com/author/my-bot.git
+    "https://github.com/user/bot", # Full HTTPS URL
+    "git@github.com:user/bot.git", # SSH URL
 ]
 ```
 
-### 2.4. Isolamento Completo com Ambientes Virtuais Dedicados (`.venv`)
-Diferente de instaladores comuns que instalam tudo no Python global do sistema (causando colisões entre bibliotecas de versões conflitantes), o `sxplug` cria um `.venv` isolado para cada bot.
-
-Além disso, para garantir máxima performance de boot, o `sxplug` calcula o hash SHA-256 de `requirements.txt` (`.requirements.hash`). Se as dependências já foram instaladas anteriormente e o arquivo não foi alterado, **a invocação do processo do pip é ignorada**, reduzindo o tempo de boot de ~1.3s para menos de **0.2ms** (inicialização instantânea).
-
-### 2.5. Injeção Dinâmica em Tempo de Execução (*Dynamic Runtime Injection*)
-Para que o processo central do `sxplug` acesse os pacotes do ambiente virtual do plugin sem necessitar de processos paralelos separados, o gerenciador localiza o diretório:
-```text
-./plugins/<NomeDoPlugin>/.venv/lib/python*/site-packages
+### 2.4. Dedicated Virtual Environments & SHA-256 Cache
+Each plugin gets an isolated virtual environment:
+```bash
+./plugins/<PluginName>/.venv/bin/pip install -r requirements.txt --quiet
 ```
-E registra dinamicamente através de `site.addsitedir(sp_path)`. Isso carrega módulos, dependências binárias e arquivos `.pth` em tempo real.
+Additionally, `sxplug` stores a SHA-256 hash in `.venv/.requirements.hash`. If `requirements.txt` is unchanged, pip execution is skipped entirely, reducing startup latency to **< 0.2ms**.
 
-### 2.6. Captura e Roteamento de Mensagens no SimpleX Chat
-- **Mensagens com Comandos (`/exemplo-comando`)**:
-  Quando uma mensagem chega iniciando por barra (`/`), o Hub consulta o catálogo unificado de comandos. O handler específico registrado pelo plugin é acionado com contexto completo (`Message` e `ParsedCommand`).
-- **Mensagens de Texto Livre**:
-  O `sxplug` possui um manipulador padrão `@hub.on_message(content_type="text")` configurado para ignorar conversas livres genéricas, impedindo respostas concorrentes ou ruído nas conversas.
+### 2.5. Message Capture and Routing
+- **Command Messages (`/command-name`)**:
+  When a message begins with `/`, the hub looks up the command in its registered handlers. The designated handler is executed with full message context (`Message` and `ParsedCommand`).
+- **Plain Text Messages**:
+  `sxplug` implements `@hub.on_message(content_type="text")` to silently discard non-command messages, preventing spam and conflicting responses.
 
 ---
 
-## 3. Guia do Desenvolvedor: Criando Plugins Compatíveis
+## 3. Developer Guide: Building Compatible Plugins
 
-Qualquer bot SimpleX escrito em Python pode ser transformado em um plugin compatível com o `sxplug` seguindo padrões simples.
+Any Python SimpleX bot can be structured as an `sxplug` compatible plugin.
 
-### 3.1. Requisitos Mínimos de um Plugin
-1. Estar hospedado em um repositório Git (ex: GitHub).
-2. Conter um arquivo principal executável (`plugin.py`, `main.py`, `bot.py` ou `<NomeDoRepo>.py`).
-3. (Opcional) Conter um `requirements.txt` com suas bibliotecas.
+### 3.1. Minimum Requirements
+1. Hosted in a Git repository (e.g. GitHub).
+2. Contains an executable entrypoint file (`plugin.py`, `<RepoName>.py`, `bot.py`, or `main.py`).
+3. (Optional) Contains `requirements.txt` with external dependencies.
 
-### 3.2. Estrutura Recomendada do Repositório
+### 3.2. Recommended Repository Structure
 ```text
-MeuBotSimplex/
-├── requirements.txt            # Dependências necessárias do seu bot
-├── README.md                   # Documentação das funcionalidades e comandos
-├── .gitignore                  # Ignorar .venv/, *.db, __pycache__/
-├── plugin.py                   # Ponto de entrada (Entrypoint)
-├── assets/                     # Imagens, mídias ou arquivos estáticos
-└── data/                       # (Opcional) Armazenamento de dados do plugin
+MySimpleXBot/
+├── requirements.txt            # External dependencies
+├── README.md                   # Documentation and command references
+├── .gitignore                  # Ignore .venv/, *.db, __pycache__/
+├── plugin.py                   # Main entrypoint
+└── assets/                     # Media, images, or static files
 ```
 
-### 3.3. Gerenciamento de Dependências com `requirements.txt`
-Declare apenas as bibliotecas que seu bot precisa. Exemplo:
-```text
-simplex-chat>=7.1.3
-pillow>=10.0.0
-requests>=2.31.0
-```
-
-### 3.4. Localização do Arquivo Principal (Ordem de Resolução de Entrypoints)
-Ao carregar o diretório do plugin, o `sxplug` busca automaticamente o ponto de entrada na seguinte ordem de prioridade:
-1. `plugin.py` (Recomendado)
-2. `<NomeDoRepositório>.py` (Ex: `MeuBot.py`)
+### 3.3. Entrypoint Resolution Priority
+`sxplug` resolves entrypoints in the following order:
+1. `plugin.py` *(Recommended)*
+2. `<RepoName>.py` (e.g. `MyBot.py`)
 3. `bot.py`
 4. `main.py`
-5. Qualquer arquivo `.py` na raiz que não inicie por sublinhado (`__`).
+5. Any `.py` file in repository root not prefixed with `__`.
 
-### 3.5. Padrões de Compatibilidade e Integração
+### 3.4. Integration Patterns
 
-O `sxplug` oferece suporte nativo a dois padrões:
-
-#### 3.5.1. Padrão A: Instância `bot = Bot(...)` (Descoberta Automática)
-É o padrão mais comum. Seu bot pode ser desenvolvido e testado de forma independente como um bot SimpleX normal. O `sxplug` detecta a variável `bot` e importa seus comandos automaticamente:
+#### 3.4.1. Pattern A: `bot = Bot(...)` Instance (Recommended)
+Develop and test your bot as an independent SimpleX bot. `sxplug` detects the `bot` instance and imports commands automatically:
 
 ```python
 # plugin.py
-from simplex_chat import Bot, BotCommand, Message, ParsedCommand
+from simplex_chat import Bot, BotCommand, BotProfile, Message, ParsedCommand, SqliteDb
 
 bot = Bot(
+    profile=BotProfile(display_name="MyBot"),
+    db=SqliteDb(file_prefix="mybot"),
     commands=[
-        BotCommand(keyword="meubot-ola", label="Envia uma mensagem de boas-vindas"),
-    ]
+        BotCommand(keyword="mybot-hello", label="Send a friendly greeting"),
+    ],
 )
 
-@bot.on_command("meubot-ola")
-async def ola_handler(msg: Message, cmd: ParsedCommand) -> None:
+@bot.on_command("mybot-hello")
+async def hello_handler(msg: Message, cmd: ParsedCommand) -> None:
     await msg.client.api.api_send_text_message(
         msg.chat_info, 
-        "👋 Olá! Resposta vinda diretamente do plugin MeuBot!"
+        "👋 Hello! Response sent directly from MyBot plugin."
     )
 
 if __name__ == "__main__":
-    # Permite rodar sozinho fora do sxplug se desejar
     bot.run()
 ```
 
-#### 3.5.2. Padrão B: Função Hook `setup(hub)` (Injeção Direta)
-Ideal para plugins criados especificamente para rodar sob o `sxplug`:
+#### 3.4.2. Pattern B: `setup(hub)` Hook
+Ideal for plugins designed specifically to run inside `sxplug`:
 
 ```python
 # plugin.py
 from simplex_chat import BotCommand, Message, ParsedCommand
 
 def setup(hub):
-    # Registra comando na lista de comandos visíveis do Hub
-    hub._commands.append(BotCommand("meubot-info", "Exibe informações do MeuBot"))
-    
-    # Registra o manipulador
-    @hub.on_command("meubot-info")
+    hub._commands.append(BotCommand("mybot-info", "Display MyBot information"))
+
+    @hub.on_command("mybot-info")
     async def info_handler(msg: Message, cmd: ParsedCommand) -> None:
         await msg.client.api.api_send_text_message(
             msg.chat_info, 
-            "ℹ️ Informações fornecidas pelo plugin via setup(hub)."
+            "ℹ️ Info provided via setup(hub) hook."
         )
 ```
 
-### 3.6. Boas Práticas e Regras de Convivência
+### 3.5. Best Practices & Rules
 
-#### 3.6.1. Prefixo e Namespacing de Comandos (Obrigatório)
-Como múltiplos plugins compartilham o mesmo perfil e conexão SimpleX:
-- **Nunca utilize comandos genéricos** como `/help`, `/add`, `/list` ou `/start`.
-- Todos os comandos do plugin devem conter obrigatoriamente um prefixo identificador exclusivo do bot.
-  - ❌ **Proibido:** `/help`, `/add <texto>`, `/delete <id>`, `/reset`
-  - ✅ **Obrigatório:** `/meubot-help`, `/meubot-add <texto>`, `/meubot-del <id>`, `/meubot-reset`
+#### 3.5.1. Command Namespacing (Mandatory)
+Because multiple plugins share the same connection:
+- **Never use generic command names** like `/help`, `/add`, `/list`, or `/start`.
+- Every command must be prefixed with the bot's unique identifier.
+  - ❌ **Prohibited:** `/help`, `/add <text>`, `/delete <id>`, `/reset`
+  - ✅ **Required:** `/mybot-help`, `/mybot-add <text>`, `/mybot-delete <id>`, `/mybot-reset`
 
-#### 3.6.2. Armazenamento, Bancos de Dados e Caminhos Relativos
-Se o plugin mantiver estado ou banco de dados persistente (como SQLite):
-- Os caminhos devem ser **estritamente relativos à pasta do próprio plugin**:
+#### 3.5.2. Isolated Relative Persistence
+If your plugin uses SQLite or local files:
+- Use strictly relative paths inside the plugin directory:
   ```python
   BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-  DB_PATH = os.path.join(BASE_DIR, "meubot.db")
+  DB_PATH = os.path.join(BASE_DIR, "mybot.db")
   ```
-- **Nunca grave arquivos na pasta raiz do `sxplug` ou em `data/`** (essa pasta é de uso exclusivo das chaves e identidade SMP do Hub).
-- Mantenha `*.db` e `*.sqlite` declarados no `.gitignore` do repositório para evitar versionamento acidental de dados privados de usuários.
-
-#### 3.6.3. Isolamento Total de Dependências
-- Declare todas as bibliotecas externas necessárias exclusivamente em `requirements.txt`.
-- O `sxplug` cria automaticamente um `.venv` isolado para o seu plugin e injeta suas bibliotecas em tempo de execução. O plugin não deve tentar gerenciar ambientes virtuais manualmente.
-
-#### 3.6.4. Envio de Arquivos, Mídias e Mensagens Formatadas
-O `sxplug` já configura as permissões do perfil SimpleX com `files: allow: yes`. Seus plugins podem enviar tabelas, imagens geradas em tempo de execução ou relatórios binários utilizando a API nativa (`msg.client.api.api_send_text_message`, etc.).
+- **Never write files to the sxplug root or data/ directory.**
+- Add `*.db` and `*.sqlite` to your plugin's `.gitignore`.
 
 ---
 
-### 3.7. As 4 Regras de Ouro da Arquitetura do Plugin
+### 3.6. The 4 Gold Rules of Plugin Architecture
 
-| Regra | Requisito | Motivação |
+| Rule | Requirement | Purpose |
 | :--- | :--- | :--- |
-| **1. Autonomia Total** | O plugin deve ser um repositório Git independente com `requirements.txt`. | Permite testar e versionar o bot individualmente fora do Hub. |
-| **2. Ponto de Entrada Padrão** | Conter `plugin.py` (ou `<NomeDoRepo>.py`). | O `sxplug` descobre e executa o entrypoint de forma transparente. |
-| **3. Namespacing Estrito** | Comandos obrigatoriamente prefixados (`/<nome>-comando`). | Evita que dois plugins interceptem o mesmo comando no chat. |
-| **4. Dados Confinados** | Bancos de dados e arquivos gravados dentro da pasta do plugin. | Garante que deletar ou atualizar a pasta do plugin não afete outros bots. |
+| **1. Full Autonomy** | Standalone Git repository with `requirements.txt`. | Allows independent testing outside the hub. |
+| **2. Standard Entrypoint** | Provide `plugin.py` or `<RepoName>.py`. | Ensures seamless auto-discovery. |
+| **3. Strict Namespacing** | Commands prefixed with `/<name>-command`. | Prevents command collisions between plugins. |
+| **4. Confined Data** | Store databases and state inside plugin directory. | Guarantees safe cleanup and no cross-plugin corruption. |
 
 ---
 
-## 4. Operação e Gerenciamento do Hub
+## 4. Hub Operation & Management
 
-### 4.1. Como Instalar e Rodar o `sxplug` (Zero Setup)
-O `sxplug` possui capacidade de **Auto-Bootstrap**:
-1. Clone o repositório ou baixe o arquivo `sxplug.py`.
-2. Declare os plugins desejados no array `PLUGINS` em `sxplug.py`.
-3. Execute diretamente no terminal:
+### 4.1. Quickstart (Zero Setup)
+`sxplug` features automatic self-bootstrapping:
+1. Clone the repository: `git clone https://github.com/DaFi-1/sxplug.git`
+2. Declare desired bots in `PLUGINS = [...]` in `sxplug.py`.
+3. Run directly:
    ```bash
    python3 sxplug.py
    ```
-O `sxplug` verifica se o ambiente virtual raiz existe. Se for a primeira execução com o Python do sistema, ele cria o `.venv`, instala o `requirements.txt` e se reinicia automaticamente dentro do ambiente isolado. Nas próximas execuções, ele pula direto para o boot instantâneo.
+If executed using the system Python, `sxplug` automatically creates the root `.venv`, installs requirements, and re-executes itself inside the virtualenv.
 
-### 4.2. Comandos Nativos de Administração
-O `sxplug` disponibiliza comandos internos automáticos disponíveis para qualquer contato no chat:
-- `/plugin-list`: Lista todos os plugins instalados e seus respectivos repositórios em formato de tabela Markdown.
-- `/plugin-help`: Exibe mensagem explicativa e lista de comandos do gerenciador.
-
-> **Nota:** A adição, remoção e configuração de plugins é centralizada exclusivamente de forma limpa e declarativa no arquivo de configuração `PLUGINS = [...]` em `sxplug.py`.
-
-### 4.3. Atualizações Automáticas via Chat
-Ao enviar `/plugin-update` no chat do SimpleX:
-1. O `sxplug` executa `git pull` de forma segura (sem travamentos de prompt de terminal).
-2. Verifica se o `requirements.txt` de algum plugin foi alterado e atualiza o `.venv` respectivo.
-3. Devolve um relatório resumido no chat com o status de cada plugin atualizado.
-
-### 4.4. Execução em Produção e Background (Daemon)
-Para manter o `sxplug` rodando continuamente em um servidor ou máquina local:
-```bash
-nohup /caminho/para/.venv/bin/python3 sxplug.py > sxplug.log 2>&1 &
-```
-Ou configure uma unidade de serviço no `systemd` para inicialização automática com o sistema.
-
----
-
-## 5. Resolução de Problemas (Troubleshooting) & FAQ
-
-### 5.1. O que acontece se dois plugins usarem o mesmo comando?
-O `sxplug` registrará ambos os manipuladores na lista de execução. Para evitar respostas duplicadas ou comportamento inesperado, **sempre adote o prefixo exclusivo do seu bot** nos comandos (Namespacing).
-
-### 5.2. Como o `sxplug` lida com falhas em um plugin individual?
-Se um plugin apresentar erro de sintaxe, dependência corrompida ou falha no `setup()`:
-- O `sxplug` captura a exceção, registra o erro no log (`logging.error`) e **continua inicializando os demais plugins normalmente**.
-- O Hub nunca cai por causa de uma falha em um plugin individual.
-
-### 5.3. Atualização de dependências após novos commits no repositório
-O método `update_all()` do gerenciador automaticamente reavalia o `requirements.txt` de cada plugin após realizar o `git pull`, instalando quaisquer novas bibliotecas que o autor do plugin tenha adicionado.
+### 4.2. Built-in Commands
+- `/plugin-list`: Display all active plugins and repositories in a Markdown table.
+- `/plugin-help`: Display manager overview and command guidance.
