@@ -85,3 +85,16 @@ class SxPlugClient(Bot):
         prefs.update({k: {"allow": "yes"} for k in ("files", "fullDelete")})
         p["peerType"] = "bot"
         return p
+
+    async def _sync_profile(self, user):
+        new_p = self._profile_to_wire()
+        cur = user.get("profile", {})
+        keys = ("displayName", "fullName", "shortDescr", "image", "preferences", "peerType")
+        if any(cur.get(k) != new_p.get(k) for k in keys):
+            try:
+                await self.api.api_update_profile(user["userId"], new_p)
+                return True
+            except Exception as e:
+                import logging
+                logging.warning("Warning updating profile on SMP: %s", e)
+        return False
