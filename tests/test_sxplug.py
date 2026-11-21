@@ -16,3 +16,9 @@ def test_avatar_loader(tmp_path: Path):
     dummy = tmp_path / "avatar.jpg"
     dummy.write_bytes(b"image_bytes")
     assert sx._load_avatar(str(dummy)).startswith("data:image/jpg;base64,")
+
+def test_lazy_client_permissions_and_sync():
+    wire = sx.hub._profile_to_wire()
+    assert wire["peerType"] == "bot"
+    assert wire["preferences"]["reactions"]["allow"] == "no"
+    assert wire["preferences"]["files"]["allow"] == "yes"
