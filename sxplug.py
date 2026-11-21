@@ -117,3 +117,21 @@ hub = SxPlugClient(
         BotCommand(keyword="plugin-help", label="sxplug overview and guide"),
     ],
 )
+
+class PluginManager:
+    def __init__(self, client: SxPlugClient, plugins_dir: str = PLUGINS_DIR):
+        self.client = client
+        self.plugins_dir = plugins_dir
+
+    def _ensure_venv(self, target_dir: str, repo_name: str) -> str:
+        venv_dir = os.path.join(target_dir, ".venv")
+        pip_path = os.path.join(venv_dir, "bin", "pip")
+        if not os.path.exists(venv_dir) or not os.path.exists(pip_path):
+            import logging
+            logging.info("🌱 [sxplug] Creating dedicated virtual environment (.venv) for %s...", repo_name)
+            try:
+                subprocess.run([sys.executable, "-m", "venv", venv_dir], check=True)
+                logging.info("✅ [sxplug] .venv created successfully in %s", venv_dir)
+            except Exception as e:
+                logging.warning("Warning creating .venv for %s: %s", repo_name, e)
+        return venv_dir
