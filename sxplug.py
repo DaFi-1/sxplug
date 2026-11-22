@@ -65,6 +65,13 @@ except ImportError:
     console = None
     HAS_RICH = False
 
+try:
+    import qrcode
+
+    HAS_QRCODE = True
+except ImportError:
+    HAS_QRCODE = False
+
 from simplex_chat import (
     Bot,
     BotCommand,
@@ -143,8 +150,29 @@ def _load_avatar(path: str = AVATAR_PATH) -> Optional[str]:
     return None
 
 
+def _print_ascii_qr(address: str) -> None:
+    """Render compact ASCII QR code for scanning via SimpleX Chat app."""
+    if not HAS_QRCODE or not address:
+        return
+    try:
+        import io
+
+        qr = qrcode.QRCode(border=1)
+        qr.add_data(address)
+        buf = io.StringIO()
+        qr.print_ascii(out=buf, invert=True)
+        for line in buf.getvalue().splitlines():
+            if HAS_RICH and console:
+                console.print(f"  {line}")
+            else:
+                print(f"  {line}")
+        print()
+    except Exception:
+        pass
+
+
 def _render_dashboard(client: SxPlugClient, address: str = "") -> None:
-    """Render top header rectangle and clean status."""
+    """Render top header rectangle, clean status and terminal QR code."""
     title = "sxplug 1.0.0"
     box_w = 26
     pad = (box_w - len(title)) // 2
@@ -163,6 +191,7 @@ def _render_dashboard(client: SxPlugClient, address: str = "") -> None:
         else:
             print("    (none)")
         print(f"\nAddress: {address}\n")
+        _print_ascii_qr(address)
         return
 
     console.print(f"\n[bold green]{border}[/bold green]")
@@ -178,6 +207,7 @@ def _render_dashboard(client: SxPlugClient, address: str = "") -> None:
         console.print("    [dim](none)[/dim]")
 
     console.print(f"\n[dim white]Address:[/dim white] [bold bright_green]{address}[/bold bright_green]\n")
+    _print_ascii_qr(address)
 
 
 # =============================================================================
