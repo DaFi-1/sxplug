@@ -39,6 +39,19 @@ def test_avatar_loader(tmp_path: Path):
     assert sx._load_avatar(str(dummy)).startswith("data:image/jpg;base64,")
 
 
+def test_dir_size_str(tmp_path: Path):
+    assert sx._dir_size_str(str(tmp_path / "nonexistent")) == "0 B"
+    d = tmp_path / "test_plugin_dir"
+    d.mkdir()
+    (d / "plugin.py").write_bytes(b"x" * 2048)  # 2 KB
+    # Ignore .venv and .git
+    venv = d / ".venv"
+    venv.mkdir()
+    (venv / "huge.bin").write_bytes(b"x" * 1024 * 1024)
+    res = sx._dir_size_str(str(d))
+    assert "2.0 KB" in res
+
+
 def test_lazy_client_permissions_and_sync():
     wire = sx.hub._profile_to_wire()
     assert wire["peerType"] == "bot"
@@ -209,16 +222,30 @@ def test_markdown_table_plugin_list(tmp_path: Path):
 
     msg = SimpleNamespace(chat_info={"type": "direct"}, client=SimpleNamespace(api=MockApi()))
 
+    # Create dummy plugin folder
+    p_dir = tmp_path / "DinoBot"
+    p_dir.mkdir()
+    (p_dir / "plugin.py").write_text("print('dino')")
+
     # Case 1: Registry with plugins
     sx.hub.plugin_registry = {
-        "DinoBot": {"url": "https://github.com/DaFi-1/DinoBot.git"},
-        "WeatherBot": {"url": "user/WeatherBot"},
+        "DinoBot": {
+            "url": "https://github.com/DaFi-1/DinoBot.git",
+            "commands": ["dinobot-help", "dinobot-play"],
+            "path": str(p_dir),
+        },
+        "WeatherBot": {
+            "url": "user/WeatherBot",
+            "commands": [],
+            "path": "",
+        },
     }
     asyncio.run(sx.cmd_plugin_list(msg, None))
     output = sent[-1]
-    assert "| Plugin | Repository |" in output
-    assert "| DinoBot | DaFi-1/DinoBot |" in output
-    assert "| WeatherBot | user/WeatherBot |" in output
+    assert "| Plugin | Commands | Size | Repository |" in output
+    assert "| DinoBot | 2 |" in output
+    assert "| DaFi-1/DinoBot |" in output
+    assert "| WeatherBot | 0 | 0 B | user/WeatherBot |" in output
 
     # Case 2: Empty registry
     sx.hub.plugin_registry = {}

@@ -152,6 +152,24 @@ def _repo_name_from_url(url: str) -> str:
     return url.rstrip("/").removesuffix(".git").split("/")[-1]
 
 
+def _dir_size_str(path: str) -> str:
+    """Calculate directory size in human-readable format, ignoring caches and venvs."""
+    if not path or not os.path.exists(path):
+        return "0 B"
+    total = 0
+    for root, dirs, files in os.walk(path):
+        dirs[:] = [d for d in dirs if d not in (".venv", ".git", "__pycache__")]
+        for f in files:
+            fp = os.path.join(root, f)
+            if not os.path.islink(fp) and os.path.exists(fp):
+                total += os.path.getsize(fp)
+    if total < 1024:
+        return f"{total} B"
+    if total < 1024 * 1024:
+        return f"{total / 1024:.1f} KB"
+    return f"{total / (1024 * 1024):.1f} MB"
+
+
 def _load_avatar(path: str = AVATAR_PATH) -> Optional[str]:
     """Load and optimize bot avatar image as Base64 for SimpleX Chat."""
     if not os.path.exists(path):
@@ -497,12 +515,14 @@ async def cmd_plugin_list(msg: Message, _cmd: ParsedCommand) -> None:
 
     lines = [
         "**Installed Plugins:**\n",
-        "| Plugin | Repository |",
-        "| :--- | :--- |",
+        "| Plugin | Commands | Size | Repository |",
+        "| :--- | :---: | :---: | :--- |",
     ]
     for name, p in hub.plugin_registry.items():
         shorthand = _shorthand_from_url(p.get("url", name))
-        lines.append(f"| {name} | {shorthand} |")
+        cmds_count = len(p.get("commands", []))
+        size_str = _dir_size_str(p.get("path", ""))
+        lines.append(f"| {name} | {cmds_count} | {size_str} | {shorthand} |")
     await _reply(msg, "\n".join(lines))
 
 

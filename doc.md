@@ -213,7 +213,7 @@ All plugins created for the `sxplug` ecosystem must use the **Apache License 2.0
 If executed using the system Python, `sxplug` automatically creates the root `.venv`, installs requirements, and re-executes itself inside the virtualenv.
 
 ### 4.2. Built-in Commands
-- `/plugin-list`: Display all active plugins and repositories in a Markdown table.
+- `/plugin-list`: Display all active plugins in a Markdown table with command counts, disk size, and repository sources.
 - `/plugin-help`: Display manager overview and command guidance.
 
 ### 4.3. Bot Profile & Identity Configuration (`BOT_CONFIG`)

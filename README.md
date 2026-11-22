@@ -58,7 +58,7 @@ This safely deletes the previous address from the SimpleX SMP servers and issues
 4. **Auto-Discovery**: Resolves entrypoint files and registers all commands dynamically.
 5. **Fixed Identity**: Keeps persistent keys and SMP address in `./data/my_bot_chat.db`.
 6. **Built-in Chat Commands**:
-   - `/plugin-list`: Display installed bots in a clean Markdown table.
+   - `/plugin-list`: Display installed bots in a Markdown table with command counts, disk size, and repositories.
    - `/plugin-help`: Display overview and usage instructions.
 7. **Minimalist Dashboard & Terminal QR Code**: Displays a clean startup summary with an instant terminal-scannable ASCII QR code for fast mobile connection.
 
