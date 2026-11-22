@@ -165,8 +165,8 @@ hub = SxPlugClient(
         image=_load_avatar(),
     ),
     db=SqliteDb(file_prefix=os.path.join(DATA_DIR, "my_bot")),
-    create_address=False,
-    update_address=False,
+    create_address=True,
+    update_address=True,
     update_profile=True,
     allow_files=True,
     commands=[
