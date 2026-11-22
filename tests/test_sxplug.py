@@ -215,3 +215,21 @@ def test_markdown_table_plugin_list(tmp_path: Path):
     asyncio.run(sx.cmd_plugin_help(msg, None))
     assert "sxplug" in sent[-1]
     asyncio.run(sx.handle_text(SimpleNamespace()))
+
+
+def test_dashboard_and_ascii_qr(capsys: pytest.CaptureFixture):
+    # Test QR generator with valid address
+    sx._print_ascii_qr("https://smp8.simplex.im/a#test12345")
+    captured = capsys.readouterr().out
+    assert len(captured.strip()) > 0
+
+    # Test dashboard rendering
+    dummy_client = SimpleNamespace(
+        plugin_registry={"DinoBot": {"commands": ["ping", "help"]}},
+        _commands=[SimpleNamespace(keyword="ping"), SimpleNamespace(keyword="help")],
+    )
+    sx._render_dashboard(dummy_client, "https://smp8.simplex.im/a#test12345")
+    out = capsys.readouterr().out
+    assert "sxplug 1.0.0" in out
+    assert "DinoBot" in out
+    assert "Address:" in out

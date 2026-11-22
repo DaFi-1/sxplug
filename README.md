@@ -42,6 +42,7 @@ python3 sxplug.py
 6. **Built-in Chat Commands**:
    - `/plugin-list`: Display installed bots in a clean Markdown table.
    - `/plugin-help`: Display overview and usage instructions.
+7. **Minimalist Dashboard & Terminal QR Code**: Displays a clean startup summary with an instant terminal-scannable ASCII QR code for fast mobile connection.
 
 ---
 
