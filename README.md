@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/banner.jpg" alt="sxplug Logo" width="220" />
+  <img src="assets/banner.jpg" alt="sxplug Banner" width="100%" />
 </p>
 
 <h1 align="center">⚡ sxplug</h1>
