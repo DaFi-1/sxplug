@@ -67,3 +67,9 @@ This safely deletes the previous address from the SimpleX SMP servers and issues
 ## 📖 Documentation
 
 For in-depth architecture details, plugin creation guide, and technical specifications, see [doc.md](doc.md).
+
+---
+
+## 📄 License
+
+This project is licensed under the [Apache License 2.0](LICENSE).

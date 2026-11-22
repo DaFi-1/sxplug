@@ -183,9 +183,12 @@ If your plugin uses SQLite or local files:
 - **Never write files to the sxplug root or data/ directory.**
 - Add `*.db` and `*.sqlite` to your plugin's `.gitignore`.
 
+#### 3.5.3. Permissive Licensing Requirement
+All plugins created for the `sxplug` ecosystem must use the **Apache License 2.0** (or a compatible permissive open-source license such as MIT). This guarantees that plugins can be safely fetched, executed, and integrated into user hubs without restrictive distribution conflicts or proprietary barriers.
+
 ---
 
-### 3.6. The 4 Gold Rules of Plugin Architecture
+### 3.6. The 5 Gold Rules of Plugin Architecture
 
 | Rule | Requirement | Purpose |
 | :--- | :--- | :--- |
@@ -193,6 +196,7 @@ If your plugin uses SQLite or local files:
 | **2. Standard Entrypoint** | Provide `plugin.py` or `<RepoName>.py`. | Ensures seamless auto-discovery. |
 | **3. Strict Namespacing** | Commands prefixed with `/<name>-command`. | Prevents command collisions between plugins. |
 | **4. Confined Data** | Store databases and state inside plugin directory. | Guarantees safe cleanup and no cross-plugin corruption. |
+| **5. Open Licensing** | Apache 2.0 or compatible permissive license. | Ensures plugins can be freely shared and integrated across the ecosystem. |
 
 ---
 
