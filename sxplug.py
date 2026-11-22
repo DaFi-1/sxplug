@@ -49,15 +49,10 @@ import hashlib
 import importlib.util
 import logging
 import site
-import time
 from typing import Any, Optional
 
 try:
     from rich.console import Console
-    from rich.panel import Panel
-    from rich.table import Table
-    from rich.text import Text
-    from rich import box
 
     console = Console()
     HAS_RICH = True
@@ -185,13 +180,13 @@ def _load_avatar(path: str = AVATAR_PATH) -> Optional[str]:
         buf = io.BytesIO()
         img.save(buf, format="JPEG", quality=85, optimize=True)
         raw = buf.getvalue()
-        return f"data:image/jpg;base64,{base64.b64encode(raw).decode('utf-8')}"
     except Exception:
         try:
             with open(path, "rb") as f:
-                return f"data:image/jpg;base64,{base64.b64encode(f.read()).decode('utf-8')}"
+                raw = f.read()
         except Exception:
             return None
+    return f"data:image/jpg;base64,{base64.b64encode(raw).decode('utf-8')}"
 
 
 def _print_ascii_qr(address: str) -> None:
@@ -205,11 +200,9 @@ def _print_ascii_qr(address: str) -> None:
         qr.add_data(address)
         buf = io.StringIO()
         qr.print_ascii(out=buf, invert=True)
+        p = console.print if (HAS_RICH and console) else print
         for line in buf.getvalue().splitlines():
-            if HAS_RICH and console:
-                console.print(f"  {line}")
-            else:
-                print(f"  {line}")
+            p(f"  {line}")
         print()
     except Exception:
         pass
@@ -217,40 +210,22 @@ def _print_ascii_qr(address: str) -> None:
 
 def _render_dashboard(client: SxPlugClient, address: str = "") -> None:
     """Render top header rectangle, clean status and terminal QR code."""
-    title = "sxplug 1.0.0"
-    box_w = 26
+    title, box_w = "sxplug 1.0.0", 26
     pad = (box_w - len(title)) // 2
     inner = " " * pad + title + " " * (box_w - len(title) - pad)
-    border = "+" + "-" * box_w + "+"
+    border = f"+{'-' * box_w}+"
 
-    if not HAS_RICH or console is None:
-        print(f"\n{border}")
-        print(f"|{inner}|")
-        print(f"{border}\n")
-        print("Plugins:")
-        if client.plugin_registry:
-            for name, meta in client.plugin_registry.items():
-                cmds = len(meta.get("commands", []))
-                print(f"    - {name} ({cmds} commands)")
-        else:
-            print("    (none)")
-        print(f"\nAddress: {address}\n")
-        _print_ascii_qr(address)
-        return
-
-    console.print(f"\n[bold green]{border}[/bold green]")
-    console.print(f"[bold green]|[/bold green][bold white]{inner}[/bold white][bold green]|[/bold green]")
-    console.print(f"[bold green]{border}[/bold green]\n")
-
-    console.print("[dim white]Plugins:[/dim white]")
+    p = console.print if (HAS_RICH and console) else print
+    p(f"\n[bold green]{border}[/bold green]\n[bold green]|[/bold green][bold white]{inner}[/bold white][bold green]|[/bold green]\n[bold green]{border}[/bold green]\n" if (HAS_RICH and console) else f"\n{border}\n|{inner}|\n{border}\n")
+    p("[dim white]Plugins:[/dim white]" if (HAS_RICH and console) else "Plugins:")
     if client.plugin_registry:
         for name, meta in client.plugin_registry.items():
             cmds = len(meta.get("commands", []))
-            console.print(f"    [green]-[/green] [bold white]{name}[/bold white] [dim]({cmds} commands)[/dim]")
+            p(f"    [green]-[/green] [bold white]{name}[/bold white] [dim]({cmds} commands)[/dim]" if (HAS_RICH and console) else f"    - {name} ({cmds} commands)")
     else:
-        console.print("    [dim](none)[/dim]")
+        p("    [dim](none)[/dim]" if (HAS_RICH and console) else "    (none)")
 
-    console.print(f"\n[dim white]Address:[/dim white] [bold bright_green]{address}[/bold bright_green]\n")
+    p(f"\n[dim white]Address:[/dim white] [bold bright_green]{address}[/bold bright_green]\n" if (HAS_RICH and console) else f"\nAddress: {address}\n")
     _print_ascii_qr(address)
 
 
@@ -416,9 +391,6 @@ class PluginManager:
 
         pip_path = os.path.join(venv_dir, "bin", "pip")
         cmd = [pip_path if os.path.exists(pip_path) else sys.executable, "install", "-r", req_file, "--quiet"]
-        if not os.path.exists(pip_path):
-            cmd = [sys.executable, "-m", "pip", "install", "-r", req_file, "--quiet"]
-
         logging.info("⚙️ [sxplug] Installing/updating dependencies for %s in dedicated .venv...", repo_name)
         try:
             subprocess.run(cmd, check=False)
