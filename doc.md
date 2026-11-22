@@ -174,13 +174,37 @@ Because multiple plugins share the same connection:
   - ✅ **Required:** `/mybot-help`, `/mybot-add <text>`, `/mybot-delete <id>`, `/mybot-reset`
 
 #### 3.5.2. Standard Database Persistence (Central `data/` or Local)
-`sxplug` provides a dedicated central storage directory for all plugin SQLite databases (default: `data/`, fully customizable via `BOT_CONFIG["data_dir"]`). Plugins can access it via:
-1. **Injected helper**: `db_path = get_db_path("mybot")` (e.g. returns `.../data/mybot.sqlite3`)
+`sxplug` provides a dedicated, persistent storage directory for all plugin SQLite databases (default: `./data/`, customizable via `BOT_CONFIG["data_dir"]`). Plugins can access it via:
+
+1. **Injected helper**: `db_path = get_db_path("mybot")` (returns e.g. `.../data/mybot.sqlite3`)
 2. **Injected constant**: `DATA_DIR`
 3. **Environment variable**: `os.getenv("SXPLUG_DATA_DIR")`
 4. **Hub instance**: `hub.get_db_path("mybot")` inside `setup(hub)`
 
-All `*.sqlite`, `*.sqlite3`, and `*.db` files are strictly ignored by `.gitignore` to guarantee zero data leaks.
+##### Practical Example for Plugin Developers:
+```python
+# plugin.py
+import os
+import sqlite3
+from simplex_chat import Bot, BotCommand, Message, ParsedCommand
+
+# 1. Use the central data directory if running under sxplug, or local fallback:
+DB_PATH = get_db_path("mybot") if "get_db_path" in globals() else "mybot.sqlite3"
+
+def get_connection():
+    return sqlite3.connect(DB_PATH)
+
+bot = Bot(commands=[BotCommand("mybot-ping", "Check bot status")])
+
+@bot.on_command("mybot-ping")
+async def ping_handler(msg: Message, cmd: ParsedCommand) -> None:
+    with get_connection() as conn:
+        conn.execute("CREATE TABLE IF NOT EXISTS stats (hits INTEGER)")
+        conn.execute("INSERT INTO stats VALUES (1)")
+    await msg.client.api.api_send_text_message(msg.chat_info, "🏓 Pong! Database updated.")
+```
+
+> **🔒 Zero Data Leaks**: All `*.sqlite`, `*.sqlite3`, and `*.db` files are strictly ignored by `.gitignore` globally across the repository.
 
 #### 3.5.3. Permissive Licensing Requirement
 All plugins created for the `sxplug` ecosystem must use the **Apache License 2.0** (or a compatible permissive open-source license such as MIT). This guarantees that plugins can be safely fetched, executed, and integrated into user hubs without restrictive distribution conflicts or proprietary barriers.
@@ -194,8 +218,8 @@ All plugins created for the `sxplug` ecosystem must use the **Apache License 2.0
 | **1. Full Autonomy** | Standalone Git repository with `requirements.txt`. | Allows independent testing outside the hub. |
 | **2. Standard Entrypoint** | Provide `plugin.py` or `<RepoName>.py`. | Ensures seamless auto-discovery. |
 | **3. Strict Namespacing** | Commands prefixed with `/<name>-command`. | Prevents command collisions between plugins. |
-| **4. Confined Data** | Store databases and state inside plugin directory. | Guarantees safe cleanup and no cross-plugin corruption. |
-| **5. Open Licensing** | Apache 2.0 or compatible permissive license. | Ensures plugins can be freely shared and integrated across the ecosystem. |
+| **4. Central Data Storage** | Store databases via `get_db_path()` in `data/`. | Guarantees clean persistence and zero Git leaks. |
+| **5. Open Licensing** | Apache 2.0 or compatible permissive license. | Ensures plugins can be freely shared across the ecosystem. |
 
 ---
 
