@@ -96,7 +96,7 @@ PLUGINS: list[str] = [
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PLUGINS_DIR = os.path.join(BASE_DIR, "plugins")
 DATA_DIR = os.path.join(BASE_DIR, "data")
-AVATAR_PATH = os.path.join(BASE_DIR, "assets", "dinobot_avatar_best.jpg")
+AVATAR_PATH = os.path.join(BASE_DIR, "assets", "avatar.jpg")
 LOG_PATH = os.path.join(DATA_DIR, "sxplug.log")
 
 os.makedirs(PLUGINS_DIR, exist_ok=True)

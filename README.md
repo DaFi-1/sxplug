@@ -1,6 +1,12 @@
-# ⚡ sxplug
+<p align="center">
+  <img src="assets/banner.jpg" alt="sxplug Logo" width="220" />
+</p>
 
-Single-file modular plugin manager and installer for **SimpleX Chat**.
+<h1 align="center">⚡ sxplug</h1>
+
+<p align="center">
+  <strong>Single-file modular plugin manager and installer for SimpleX Chat</strong>
+</p>
 
 Inspired by **LazyVim**, **sxplug** allows running multiple bots under a single fixed SimpleX Chat address simply by declaring GitHub repositories in a configuration list.
 
