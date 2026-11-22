@@ -68,6 +68,20 @@ def test_lazy_client_permissions_and_sync():
     assert len(dummy_client._api.calls) == 1
 
 
+def test_bot_config_profile():
+    assert sx.BOT_CONFIG["display_name"] == "sxplug"
+    assert sx.hub._profile.display_name == sx.BOT_CONFIG["display_name"]
+    assert sx.hub._profile.full_name == sx.BOT_CONFIG["full_name"]
+    assert sx.hub._profile.short_descr == sx.BOT_CONFIG["short_descr"]
+    assert sx.hub._welcome == sx.BOT_CONFIG["welcome_message"]
+
+    wire = sx.hub._profile_to_wire()
+    assert wire["displayName"] == "sxplug"
+    assert wire["fullName"] == "Plugin Manager"
+    assert wire["description"] == sx.BOT_CONFIG["description"]
+    assert wire["peerType"] == "bot"
+
+
 def test_entrypoint_resolution_priority(tmp_path: Path):
     manager = sx.PluginManager(sx.hub, plugins_dir=str(tmp_path))
     bot_dir = tmp_path / "CustomBot"

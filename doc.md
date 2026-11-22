@@ -211,3 +211,31 @@ If executed using the system Python, `sxplug` automatically creates the root `.v
 ### 4.2. Built-in Commands
 - `/plugin-list`: Display all active plugins and repositories in a Markdown table.
 - `/plugin-help`: Display manager overview and command guidance.
+
+### 4.3. Bot Profile & Identity Configuration (`BOT_CONFIG`)
+The central bot identity, profile cards, avatar, and automatic welcome message can be fully configured in `BOT_CONFIG`:
+
+```python
+BOT_CONFIG = {
+    "display_name": "sxplug",
+    "full_name": "Plugin Manager",
+    "short_descr": "> Plugin Manager for SimpleX Chat\n> Powered by sxplug Hub",
+    "description": "Modular plug-and-play bot ecosystem for SimpleX Chat.",
+    "welcome_message": "👋 Welcome to sxplug!\nType /plugin-help to see available commands.",
+    "avatar_path": AVATAR_PATH,
+}
+```
+
+- **`display_name`**: Primary bot name displayed in chat headers and message lists.
+- **`full_name`**: Optional subtitle or secondary name shown on contact info.
+- **`short_descr`**: Brief status/bio snippet.
+- **`description`**: Extended markdown biography/info for contact profile.
+- **`welcome_message`**: Automated message sent immediately when a new user connects to the bot.
+- **`avatar_path`**: Path to JPEG/PNG avatar (automatically resized to 128x128 thumbnail with ~2.5 KB payload to strictly respect SimpleX SMP size constraints).
+
+### 4.4. Rotating SimpleX Address (`-new`)
+To revoke the existing SMP address queue and generate a fresh link and QR code:
+```bash
+python3 sxplug.py -new
+```
+This calls `api_delete_user_address` to cleanly delete the old address on SimpleX servers and creates a new cryptographic address and terminal QR code.

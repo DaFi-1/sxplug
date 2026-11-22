@@ -20,14 +20,25 @@ git clone https://github.com/DaFi-1/sxplug.git
 cd sxplug
 ```
 
-2. **Configure your bots in `sxplug.py`:**
-Simply list your bots using `user/repo` shorthand (or full Git URL):
+2. **Configure your bots and profile in `sxplug.py`:**
+Simply declare your bots and customize your bot profile directly in `sxplug.py`:
 
 ```python
+# Plugins list (user/repo shorthand or full Git URL):
 PLUGINS: list[str] = [
     "DaFi-1/DinoBot",
     # "user/another-bot",
 ]
+
+# Bot profile & identity configuration:
+BOT_CONFIG = {
+    "display_name": "sxplug",
+    "full_name": "Plugin Manager",
+    "short_descr": "> Plugin Manager for SimpleX Chat\n> Powered by sxplug Hub",
+    "description": "Modular plug-and-play bot ecosystem for SimpleX Chat.",
+    "welcome_message": "👋 Welcome to sxplug!\nType /plugin-help to see available commands.",
+    "avatar_path": AVATAR_PATH,
+}
 ```
 
 3. **Start sxplug with a single command:**

@@ -99,6 +99,19 @@ DATA_DIR = os.path.join(BASE_DIR, "data")
 AVATAR_PATH = os.path.join(BASE_DIR, "assets", "avatar.jpg")
 LOG_PATH = os.path.join(DATA_DIR, "sxplug.log")
 
+# =============================================================================
+# BOT PROFILE CONFIGURATION
+# =============================================================================
+# Customize your bot identity, profile fields, avatar and welcome message here:
+BOT_CONFIG: dict[str, str] = {
+    "display_name": "sxplug",
+    "full_name": "Plugin Manager",
+    "short_descr": "> Plugin Manager for SimpleX Chat\n> Powered by sxplug Hub",
+    "description": "Modular plug-and-play bot ecosystem for SimpleX Chat.",
+    "welcome_message": "👋 Welcome to sxplug!\nType /plugin-help to see available commands.",
+    "avatar_path": AVATAR_PATH,
+}
+
 os.makedirs(PLUGINS_DIR, exist_ok=True)
 os.makedirs(DATA_DIR, exist_ok=True)
 
@@ -251,6 +264,9 @@ class SxPlugClient(Bot):
     def _profile_to_wire(self) -> dict[str, Any]:
         """Apply least-privilege security settings and enable media/file transfers."""
         p = super()._profile_to_wire()
+        descr = BOT_CONFIG.get("description")
+        if descr:
+            p["description"] = descr
         prefs = p.setdefault("preferences", {})
         prefs.update({k: {"allow": "no"} for k in ("reactions", "calls", "voice", "timedMessages", "sessions")})
         prefs.update({k: {"allow": "yes"} for k in ("files", "fullDelete")})
@@ -261,7 +277,7 @@ class SxPlugClient(Bot):
         """Sync profile without sending invalid contactLink field."""
         new_p = self._profile_to_wire()
         cur = user.get("profile", {})
-        keys = ("displayName", "fullName", "shortDescr", "image", "preferences", "peerType")
+        keys = ("displayName", "fullName", "shortDescr", "description", "image", "preferences", "peerType")
         if any(cur.get(k) != new_p.get(k) for k in keys):
             try:
                 await self.api.api_update_profile(user["userId"], new_p)
@@ -280,11 +296,12 @@ class SxPlugClient(Bot):
 # Central SimpleX instance with persistent storage in ./data/my_bot
 hub = SxPlugClient(
     rotate_address=ROTATE_ADDRESS,
+    welcome=BOT_CONFIG.get("welcome_message"),
     profile=BotProfile(
-        display_name="sxplug",
-        full_name="",
-        short_descr="> Plugin Manager for SimpleX Chat\n> Powered by sxplug Hub",
-        image=_load_avatar(),
+        display_name=BOT_CONFIG.get("display_name", "sxplug"),
+        full_name=BOT_CONFIG.get("full_name", ""),
+        short_descr=BOT_CONFIG.get("short_descr"),
+        image=_load_avatar(BOT_CONFIG.get("avatar_path", AVATAR_PATH)),
     ),
     db=SqliteDb(file_prefix=os.path.join(DATA_DIR, "my_bot")),
     create_address=True,
