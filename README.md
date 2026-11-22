@@ -31,6 +31,13 @@ python3 sxplug.py
 
 > **✨ Auto-Bootstrap**: `sxplug` automatically detects if the root virtual environment exists. If not, it creates `.venv`, installs required dependencies, and restarts itself inside the virtualenv. On subsequent runs, it boots instantly!
 
+### 🔄 Rotating Address (Generate New & Invalidate Old)
+If you ever need to revoke the old bot address and generate a fresh new connection link:
+```bash
+python3 sxplug.py -new
+```
+This safely deletes the previous address from the SimpleX SMP servers and issues a new cryptographic link and QR code.
+
 ---
 
 ### What `sxplug` does automatically:

@@ -233,3 +233,38 @@ def test_dashboard_and_ascii_qr(capsys: pytest.CaptureFixture):
     assert "sxplug 1.0.0" in out
     assert "DinoBot" in out
     assert "Address:" in out
+
+
+def test_address_rotation():
+    class MockApi:
+        def __init__(self):
+            self.deleted = []
+            self.created = []
+            self.addr = {"connLinkContact": {"connShortLink": "https://smp8.simplex.im/a#initial"}, "addressSettings": {}}
+
+        async def api_get_user_address(self, uid):
+            return self.addr
+
+        async def api_delete_user_address(self, uid):
+            self.deleted.append(uid)
+            self.addr = None
+
+        async def api_create_user_address(self, uid):
+            self.created.append(uid)
+            self.addr = {"connLinkContact": {"connShortLink": "https://smp8.simplex.im/a#fresh_rotated"}, "addressSettings": {}}
+
+        async def api_set_address_settings(self, uid, settings):
+            pass
+
+    client = sx.SxPlugClient(
+        rotate_address=True,
+        profile=sx.BotProfile(display_name="Test"),
+        db=sx.SqliteDb(file_prefix="test_db"),
+    )
+    client._api = MockApi()
+
+    res = asyncio.run(client._sync_address({"userId": 42}))
+    assert len(client.api.deleted) == 1
+    assert client.rotate_address is False
+    assert client.api.deleted[0] == 42
+    assert len(client.api.created) == 1

@@ -210,15 +210,32 @@ def _render_dashboard(client: SxPlugClient, address: str = "") -> None:
     _print_ascii_qr(address)
 
 
+# Flag to rotate and delete previous address (e.g. `python3 sxplug.py -new`)
+ROTATE_ADDRESS: bool = any(arg in sys.argv for arg in ("-new", "--new", "--new-address", "-n"))
+
+
 # =============================================================================
 # SIMPLEX HUB CLIENT (CENTRAL MANAGER)
 # =============================================================================
 class SxPlugClient(Bot):
     """SimpleX bot client with dynamic plugin support and strict security settings."""
 
-    def __init__(self, **kwargs):
+    def __init__(self, rotate_address: bool = False, **kwargs):
         super().__init__(**kwargs)
         self.plugin_registry: dict[str, dict[str, Any]] = {}
+        self.rotate_address = rotate_address
+
+    async def _sync_address(self, user: Any) -> str | None:
+        """Sync address, deleting previous address if rotate_address is requested."""
+        if self.rotate_address:
+            try:
+                await self.api.api_delete_user_address(user["userId"])
+                logging.info("Previous bot address deleted from SimpleX server.")
+            except Exception as e:
+                logging.warning("Warning deleting old address: %s", e)
+            self.rotate_address = False
+
+        return await super()._sync_address(user)
 
     def _profile_to_wire(self) -> dict[str, Any]:
         """Apply least-privilege security settings and enable media/file transfers."""
@@ -251,6 +268,7 @@ class SxPlugClient(Bot):
 
 # Central SimpleX instance with persistent storage in ./data/my_bot
 hub = SxPlugClient(
+    rotate_address=ROTATE_ADDRESS,
     profile=BotProfile(
         display_name="sxplug",
         full_name="",
