@@ -173,15 +173,14 @@ Because multiple plugins share the same connection:
   - ❌ **Prohibited:** `/help`, `/add <text>`, `/delete <id>`, `/reset`
   - ✅ **Required:** `/mybot-help`, `/mybot-add <text>`, `/mybot-delete <id>`, `/mybot-reset`
 
-#### 3.5.2. Isolated Relative Persistence
-If your plugin uses SQLite or local files:
-- Use strictly relative paths inside the plugin directory:
-  ```python
-  BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-  DB_PATH = os.path.join(BASE_DIR, "mybot.db")
-  ```
-- **Never write files to the sxplug root or data/ directory.**
-- Add `*.db` and `*.sqlite` to your plugin's `.gitignore`.
+#### 3.5.2. Standard Database Persistence (Central `data/` or Local)
+`sxplug` provides a dedicated central storage directory for all plugin SQLite databases (default: `data/`, fully customizable via `BOT_CONFIG["data_dir"]`). Plugins can access it via:
+1. **Injected helper**: `db_path = get_db_path("mybot")` (e.g. returns `.../data/mybot.sqlite3`)
+2. **Injected constant**: `DATA_DIR`
+3. **Environment variable**: `os.getenv("SXPLUG_DATA_DIR")`
+4. **Hub instance**: `hub.get_db_path("mybot")` inside `setup(hub)`
+
+All `*.sqlite`, `*.sqlite3`, and `*.db` files are strictly ignored by `.gitignore` to guarantee zero data leaks.
 
 #### 3.5.3. Permissive Licensing Requirement
 All plugins created for the `sxplug` ecosystem must use the **Apache License 2.0** (or a compatible permissive open-source license such as MIT). This guarantees that plugins can be safely fetched, executed, and integrated into user hubs without restrictive distribution conflicts or proprietary barriers.
@@ -227,6 +226,7 @@ BOT_CONFIG = {
     "description": "Modular plug-and-play bot ecosystem for SimpleX Chat.",
     "welcome_message": "👋 Welcome to sxplug!\nType /plugin-help to see available commands.",
     "avatar_path": AVATAR_PATH,
+    "data_dir": os.path.join(BASE_DIR, "data"),  # Central storage for all plugin .sqlite3 databases
 }
 ```
 
@@ -236,6 +236,7 @@ BOT_CONFIG = {
 - **`description`**: Extended markdown biography/info for contact profile.
 - **`welcome_message`**: Automated message sent immediately when a new user connects to the bot.
 - **`avatar_path`**: Path to JPEG/PNG avatar (automatically resized to 128x128 thumbnail with ~2.5 KB payload to strictly respect SimpleX SMP size constraints).
+- **`data_dir`**: Central directory path to store SimpleX keys and all plugin SQLite databases (`.sqlite3`). Can be changed to any custom path.
 
 ### 4.4. Rotating SimpleX Address (`-new`)
 To revoke the existing SMP address queue and generate a fresh link and QR code:

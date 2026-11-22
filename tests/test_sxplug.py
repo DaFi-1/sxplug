@@ -92,6 +92,13 @@ def test_bot_config_profile():
     assert sx.hub._profile.short_descr == sx.BOT_CONFIG["short_descr"]
     assert sx.hub._welcome == sx.BOT_CONFIG["welcome_message"]
 
+    # Central storage path tests
+    assert sx.BOT_CONFIG["data_dir"] == sx.DATA_DIR
+    assert sx.hub.data_dir == sx.DATA_DIR
+    assert os.environ.get("SXPLUG_DATA_DIR") == sx.DATA_DIR
+    assert sx.hub.get_db_path("dinobot") == os.path.join(sx.DATA_DIR, "dinobot.sqlite3")
+    assert sx.hub.get_db_path("dinobot", "db") == os.path.join(sx.DATA_DIR, "dinobot.db")
+
     wire = sx.hub._profile_to_wire()
     assert wire["displayName"] == "sxplug"
     assert wire["fullName"] == "Plugin Manager"
@@ -201,7 +208,10 @@ def test_plugin_sub_bot_instance_pattern(tmp_path: Path):
 
     # Sub-bot creating its own Bot instance with required profile & db
     (bot_dir / "plugin.py").write_text(
+        "import os\n"
         "from simplex_chat import Bot, BotCommand, BotProfile, SqliteDb\n"
+        "assert DATA_DIR is not None\n"
+        "assert get_db_path('subbot').endswith('subbot.sqlite3')\n"
         "bot = Bot(\n"
         "    profile=BotProfile(display_name='SubBot'),\n"
         "    db=SqliteDb(file_prefix='subbot'),\n"

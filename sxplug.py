@@ -91,29 +91,31 @@ PLUGINS: list[str] = [
 ]
 
 # =============================================================================
-# DIRECTORIES AND GLOBAL CONSTANTS
+# DIRECTORIES AND BOT CONFIGURATION
 # =============================================================================
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-PLUGINS_DIR = os.path.join(BASE_DIR, "plugins")
-DATA_DIR = os.path.join(BASE_DIR, "data")
-AVATAR_PATH = os.path.join(BASE_DIR, "assets", "avatar.jpg")
-LOG_PATH = os.path.join(DATA_DIR, "sxplug.log")
 
-# =============================================================================
-# BOT PROFILE CONFIGURATION
-# =============================================================================
-# Customize your bot identity, profile fields, avatar and welcome message here:
+# Customize your bot identity, profile, avatar, welcome message, and database paths here:
 BOT_CONFIG: dict[str, str] = {
     "display_name": "sxplug",
     "full_name": "Plugin Manager",
     "short_descr": "> Plugin Manager for SimpleX Chat\n> Powered by sxplug Hub",
     "description": "Modular plug-and-play bot ecosystem for SimpleX Chat.",
     "welcome_message": "👋 Welcome to sxplug!\nType /plugin-help to see available commands.",
-    "avatar_path": AVATAR_PATH,
+    "avatar_path": os.path.join(BASE_DIR, "assets", "avatar.jpg"),
+    "data_dir": os.path.join(BASE_DIR, "data"),  # Default storage directory for all plugin databases
 }
+
+PLUGINS_DIR = os.path.join(BASE_DIR, "plugins")
+DATA_DIR = BOT_CONFIG.get("data_dir", os.path.join(BASE_DIR, "data"))
+AVATAR_PATH = BOT_CONFIG.get("avatar_path", os.path.join(BASE_DIR, "assets", "avatar.jpg"))
+LOG_PATH = os.path.join(DATA_DIR, "sxplug.log")
 
 os.makedirs(PLUGINS_DIR, exist_ok=True)
 os.makedirs(DATA_DIR, exist_ok=True)
+
+# Export standard environment variable so plugins can easily locate the central database directory
+os.environ["SXPLUG_DATA_DIR"] = DATA_DIR
 
 # Direct all technical background logs to file to keep terminal clean and silent
 logging.basicConfig(
@@ -262,10 +264,16 @@ ROTATE_ADDRESS: bool = any(arg in sys.argv for arg in ("-new", "--new", "--new-a
 class SxPlugClient(Bot):
     """SimpleX bot client with dynamic plugin support and strict security settings."""
 
-    def __init__(self, rotate_address: bool = False, **kwargs):
+    def __init__(self, rotate_address: bool = False, data_dir: str = DATA_DIR, **kwargs):
         super().__init__(**kwargs)
         self.plugin_registry: dict[str, dict[str, Any]] = {}
         self.rotate_address = rotate_address
+        self.data_dir = data_dir
+
+    def get_db_path(self, name: str, ext: str = "sqlite3") -> str:
+        """Get standard database path for a plugin or component inside the central data directory."""
+        clean_ext = ext.lstrip(".")
+        return os.path.join(self.data_dir, f"{name}.{clean_ext}")
 
     async def _sync_address(self, user: Any) -> str | None:
         """Sync address, deleting previous address if rotate_address is requested."""
@@ -314,6 +322,7 @@ class SxPlugClient(Bot):
 # Central SimpleX instance with persistent storage in ./data/my_bot
 hub = SxPlugClient(
     rotate_address=ROTATE_ADDRESS,
+    data_dir=DATA_DIR,
     welcome=BOT_CONFIG.get("welcome_message"),
     profile=BotProfile(
         display_name=BOT_CONFIG.get("display_name", "sxplug"),
@@ -457,6 +466,8 @@ class PluginManager:
                 return False
             mod = importlib.util.module_from_spec(spec)
             sys.modules[mod_name] = mod
+            mod.DATA_DIR = self.client.data_dir
+            mod.get_db_path = self.client.get_db_path
             spec.loader.exec_module(mod)
 
             commands_registered: list[str] = []

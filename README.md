@@ -34,6 +34,7 @@ BOT_CONFIG = {
     "description": "Modular plug-and-play bot ecosystem for SimpleX Chat.",
     "welcome_message": "👋 Welcome to sxplug!\nType /plugin-help to see available commands.",
     "avatar_path": AVATAR_PATH,
+    "data_dir": os.path.join(BASE_DIR, "data"),  # Central storage for all plugin .sqlite3 databases
 }
 ```
 

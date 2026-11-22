@@ -10,6 +10,9 @@ __pycache__/
 # SimpleX Chat data, logs and private persistent keys
 data/*
 !data/.gitkeep
+*.db
+*.sqlite
+*.sqlite3
 
 # Cloned plugins (managed via PLUGINS list in sxplug.py)
 plugins/*
