@@ -40,7 +40,15 @@ BOT_CONFIG = {
 python3 sxplug.py
 ```
 
+<p align="center">
+  <img src="assets/cli-preview.png" alt="sxplug Terminal Dashboard" width="480" />
+</p>
+
 > **✨ Auto-Bootstrap**: `sxplug` automatically detects if the root virtual environment exists. If not, it creates `.venv`, installs required dependencies, and restarts itself inside the virtualenv. On subsequent runs, it boots instantly!
+
+<p align="center">
+  <img src="assets/app-preview.png" alt="SimpleX Chat Bot Profile Preview" width="100%" />
+</p>
 
 ### 🔄 Rotating Address (Generate New & Invalidate Old)
 If you ever need to revoke the old bot address and generate a fresh new connection link:
