@@ -140,14 +140,25 @@ def _repo_name_from_url(url: str) -> str:
 
 
 def _load_avatar(path: str = AVATAR_PATH) -> Optional[str]:
-    """Load bot avatar image as Base64 for SimpleX Chat."""
-    if os.path.exists(path):
+    """Load and optimize bot avatar image as Base64 for SimpleX Chat."""
+    if not os.path.exists(path):
+        return None
+    try:
+        import io
+        from PIL import Image
+
+        img = Image.open(path)
+        img.thumbnail((128, 128), Image.Resampling.LANCZOS)
+        buf = io.BytesIO()
+        img.save(buf, format="JPEG", quality=85, optimize=True)
+        raw = buf.getvalue()
+        return f"data:image/jpg;base64,{base64.b64encode(raw).decode('utf-8')}"
+    except Exception:
         try:
             with open(path, "rb") as f:
                 return f"data:image/jpg;base64,{base64.b64encode(f.read()).decode('utf-8')}"
         except Exception:
-            pass
-    return None
+            return None
 
 
 def _print_ascii_qr(address: str) -> None:
