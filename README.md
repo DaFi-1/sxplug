@@ -2,12 +2,6 @@
   <img src="assets/banner.jpg" alt="sxplug Banner" width="100%" />
 </p>
 
-<h1 align="center">⚡ sxplug</h1>
-
-<p align="center">
-  <strong>Single-file modular plugin manager and installer for SimpleX Chat</strong>
-</p>
-
 Inspired by **LazyVim**, **sxplug** allows running multiple bots under a single fixed SimpleX Chat address simply by declaring GitHub repositories in a configuration list.
 
 ---
@@ -70,15 +64,6 @@ This safely deletes the previous address from the SimpleX SMP servers and issues
 
 ---
 
-## 📁 Directory Structure
+## 📖 Documentation
 
-```text
-sxplug/
-├── sxplug.py                   # Central single-file manager
-├── requirements.txt            # Base dependencies
-├── README.md                   # Quickstart guide
-├── doc.md                      # Full technical specification & developer guide
-├── data/                       # Persistent SimpleX cryptographic keys
-├── tests/                      # Unit test suite
-└── plugins/                    # Isolated cloned plugins (each with its own .venv)
-```
+For in-depth architecture details, plugin creation guide, and technical specifications, see [doc.md](doc.md).
