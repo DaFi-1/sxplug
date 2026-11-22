@@ -4,6 +4,8 @@
 
 Inspired by **LazyVim**, **sxplug** allows running multiple bots under a single fixed SimpleX Chat address simply by declaring GitHub repositories in a configuration list.
 
+> **🛡️ Audit-First Architecture (<600 LoC)**: The entire core engine is contained in a single transparent file ([sxplug.py](sxplug.py)) with **fewer than 600 lines of code**. With zero bloated frameworks, hidden background daemons, or complex supply-chain dependencies, any third-party developer, security auditor, or automated AI agent can inspect, verify, and audit the full codebase in minutes.
+
 ---
 
 ## 🚀 Quickstart (Zero Setup)

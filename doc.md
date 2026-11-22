@@ -24,7 +24,7 @@ Inspired by the declarative architecture of **LazyVim / packer.nvim**, `sxplug` 
 - On startup, `sxplug` handles cloning, isolated environment setup, dependency management, and dynamic command discovery automatically.
 
 ### 1.4. Key Features & Highlights
-- **Single-File Hub**: The core engine lives in a single, readable Python file (`sxplug.py`).
+- **Single-File Hub (<600 LoC)**: The core engine lives in a single, transparent Python file (`sxplug.py`) with fewer than 600 lines of code, specifically designed for rapid, straightforward security auditing by humans or automated AI verification agents.
 - **Dedicated Virtual Environments (`.venv`)**: Every plugin receives its own private `.venv`, preventing version conflicts between bots.
 - **In-Process Dynamic Injection**: Avoids heavy IPC or separate child processes; packages are injected via runtime `site.addsitedir`.
 - **SHA-256 Dependency Caching**: Caches `requirements.txt` state to skip pip invocations, enabling sub-millisecond boots.
