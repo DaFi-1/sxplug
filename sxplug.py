@@ -144,41 +144,40 @@ def _load_avatar(path: str = AVATAR_PATH) -> Optional[str]:
 
 
 def _render_dashboard(client: SxPlugClient, address: str = "") -> None:
-    """Render minimalist box dashboard with 4-space sub-indented items."""
-    border = "+--------------------------------------------------------------------------+"
+    """Render top header rectangle and clean status."""
+    title = "sxplug 1.0.0"
+    box_w = 26
+    pad = (box_w - len(title)) // 2
+    inner = " " * pad + title + " " * (box_w - len(title) - pad)
+    border = "+" + "-" * box_w + "+"
+
     if not HAS_RICH or console is None:
         print(f"\n{border}")
-        print("  sxplug 1.0.0\n")
-        print("  Plugins:")
+        print(f"|{inner}|")
+        print(f"{border}\n")
+        print("Plugins:")
         if client.plugin_registry:
             for name, meta in client.plugin_registry.items():
                 cmds = len(meta.get("commands", []))
-                print(f"      - {name} ({cmds} commands)")
+                print(f"    - {name} ({cmds} commands)")
         else:
-            print("      (none)")
-        print("\n  Address:")
-        print(f"      {address}\n")
-        print("  Status:")
-        print("      ● Online")
-        print(f"{border}\n")
+            print("    (none)")
+        print(f"\nAddress: {address}\n")
         return
 
     console.print(f"\n[bold green]{border}[/bold green]")
-    console.print("  [bold white]sxplug 1.0.0[/bold white]\n")
-    console.print("  [dim white]Plugins:[/dim white]")
+    console.print(f"[bold green]|[/bold green][bold white]{inner}[/bold white][bold green]|[/bold green]")
+    console.print(f"[bold green]{border}[/bold green]\n")
+
+    console.print("[dim white]Plugins:[/dim white]")
     if client.plugin_registry:
         for name, meta in client.plugin_registry.items():
             cmds = len(meta.get("commands", []))
-            console.print(f"      [green]-[/green] [bold white]{name}[/bold white] [dim]({cmds} commands)[/dim]")
+            console.print(f"    [green]-[/green] [bold white]{name}[/bold white] [dim]({cmds} commands)[/dim]")
     else:
-        console.print("      [dim](none)[/dim]")
+        console.print("    [dim](none)[/dim]")
 
-    console.print("\n  [dim white]Address:[/dim white]")
-    console.print(f"      [bold bright_green]{address}[/bold bright_green]\n")
-
-    console.print("  [dim white]Status:[/dim white]")
-    console.print("      [bold green]● Online[/bold green]")
-    console.print(f"[bold green]{border}[/bold green]\n")
+    console.print(f"\n[dim white]Address:[/dim white] [bold bright_green]{address}[/bold bright_green]\n")
 
 
 # =============================================================================
