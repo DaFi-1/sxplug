@@ -137,58 +137,42 @@ def _load_avatar(path: str = AVATAR_PATH) -> Optional[str]:
     return None
 
 
-def _render_banner() -> None:
-    """Render top header banner with ASCII borders."""
-    if not HAS_RICH or console is None:
-        print("\n+----------------------------------------------------------------------------+")
-        print("| sxplug v1.0.0  --  SimpleX Bot Manager & Plugin Hub                        |")
-        print("+----------------------------------------------------------------------------+\n")
-        return
-    console.print("\n[bold green]+----------------------------------------------------------------------------+[/bold green]")
-    console.print("[bold green]|[/bold green] [bold white]sxplug[/bold white] [dim green]v1.0.0[/dim green]  [dim green]--[/dim green]  [green]SimpleX Bot Manager & Plugin Hub[/green]                  [bold green]|[/bold green]")
-    console.print("[bold green]+----------------------------------------------------------------------------+[/bold green]\n")
-
-
 def _render_dashboard(client: SxPlugClient, address: str = "") -> None:
-    """Render clean overview table and address box in ASCII style."""
+    """Render minimalist box dashboard with 4-space sub-indented items."""
+    border = "+--------------------------------------------------------------------------+"
     if not HAS_RICH or console is None:
-        print("\n+------------------------------------------------------------------------------+")
-        print(f"| Active Plugins: {len(client.plugin_registry)} loaded ({len(client._commands)} commands registered)")
-        if address:
-            print(f"| Bot Address   : {address}")
-        print("| Gateway Status: ONLINE -- Listening for SimpleX events")
-        print("+------------------------------------------------------------------------------+\n")
+        print(f"\n{border}")
+        print("  sxplug 1.0.0\n")
+        print("  Plugins:")
+        if client.plugin_registry:
+            for name, meta in client.plugin_registry.items():
+                cmds = len(meta.get("commands", []))
+                print(f"      - {name} ({cmds} commands)")
+        else:
+            print("      (none)")
+        print("\n  Address:")
+        print(f"      {address}\n")
+        print("  Status:")
+        print("      ● Online")
+        print(f"{border}\n")
         return
 
-    t = Table(box=box.ASCII, border_style="green", expand=True)
-    t.add_column("COMPONENT", style="dim green", width=20)
-    t.add_column("DETAILS / VALUE", style="white")
-
-    plugins_count = len(client.plugin_registry)
-    total_cmds = len(client._commands)
-    plugins_summary = f"[green]{plugins_count} active[/green] [dim]({total_cmds} total commands registered)[/dim]"
+    console.print(f"\n[bold green]{border}[/bold green]")
+    console.print("  [bold white]sxplug 1.0.0[/bold white]\n")
+    console.print("  [dim white]Plugins:[/dim white]")
     if client.plugin_registry:
-        names = ", ".join(client.plugin_registry.keys())
-        plugins_summary += f" [dim]• {names}[/dim]"
+        for name, meta in client.plugin_registry.items():
+            cmds = len(meta.get("commands", []))
+            console.print(f"      [green]-[/green] [bold white]{name}[/bold white] [dim]({cmds} commands)[/dim]")
+    else:
+        console.print("      [dim](none)[/dim]")
 
-    t.add_row("Active Plugins", plugins_summary)
-    t.add_row("Isolation", "[cyan]Dedicated per-plugin .venv[/cyan]")
-    t.add_row("Relay SMP", "smp10.simplex.im")
-    t.add_row("Gateway Status", "[bold green]ONLINE[/bold green] [dim]-- Listening for SimpleX events[/dim]")
-    console.print(t)
+    console.print("\n  [dim white]Address:[/dim white]")
+    console.print(f"      [bold bright_green]{address}[/bold bright_green]\n")
 
-    if address:
-        p = Panel(
-            Text.from_markup(
-                f"[bold bright_green]{address}[/bold bright_green]\n\n"
-                "[dim green]> Scan or paste into SimpleX Chat app to connect immediately.[/dim green]"
-            ),
-            title="[bold green]+-- [ BOT INVITATION ADDRESS ] --+[/bold green]",
-            border_style="green",
-            box=box.ASCII,
-        )
-        console.print(p)
-    console.print(f"[dim green][{time.strftime('%H:%M:%S')}][/dim green] [bold green]>>>[/bold green] [bold white]sxplug is ready and listening...[/bold white]\n")
+    console.print("  [dim white]Status:[/dim white]")
+    console.print("      [bold green]● Online[/bold green]")
+    console.print(f"[bold green]{border}[/bold green]\n")
 
 
 # =============================================================================
@@ -406,8 +390,6 @@ class PluginManager:
                 "commands": commands_registered,
             }
             logging.info("⚡ [sxplug] Plugin '%s' enabled! (%d commands)", repo_name, len(commands_registered))
-            if HAS_RICH and console:
-                console.print(f"[green]+[/green] [bold]{repo_name}[/bold]: loaded in dedicated environment [dim]({len(commands_registered)} commands)[/dim]")
             return True
         except Exception as e:
             logging.error("❌ Error initializing plugin %s: %s", repo_name, e, exc_info=True)
@@ -468,10 +450,8 @@ async def handle_text(msg: TextMessage) -> None:
 # =============================================================================
 def start() -> None:
     """Synchronize plugins and start the SimpleX bot hub."""
-    _render_banner()
-
     if HAS_RICH and console:
-        with console.status("[bold green]Synchronizing plugins and dependencies...", spinner="dots"):
+        with console.status("[dim]Loading plugins...[/dim]", spinner="dots"):
             manager.sync_all(PLUGINS)
     else:
         manager.sync_all(PLUGINS)
