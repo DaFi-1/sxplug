@@ -49,7 +49,21 @@ import hashlib
 import importlib.util
 import logging
 import site
+import time
 from typing import Any, Optional
+
+try:
+    from rich.console import Console
+    from rich.panel import Panel
+    from rich.table import Table
+    from rich.text import Text
+    from rich import box
+
+    console = Console()
+    HAS_RICH = True
+except ImportError:
+    console = None
+    HAS_RICH = False
 
 from simplex_chat import (
     Bot,
@@ -123,6 +137,60 @@ def _load_avatar(path: str = AVATAR_PATH) -> Optional[str]:
     return None
 
 
+def _render_banner() -> None:
+    """Render top header banner with ASCII borders."""
+    if not HAS_RICH or console is None:
+        print("\n+----------------------------------------------------------------------------+")
+        print("| sxplug v1.0.0  --  SimpleX Bot Manager & Plugin Hub                        |")
+        print("+----------------------------------------------------------------------------+\n")
+        return
+    console.print("\n[bold green]+----------------------------------------------------------------------------+[/bold green]")
+    console.print("[bold green]|[/bold green] [bold white]sxplug[/bold white] [dim green]v1.0.0[/dim green]  [dim green]--[/dim green]  [green]SimpleX Bot Manager & Plugin Hub[/green]                  [bold green]|[/bold green]")
+    console.print("[bold green]+----------------------------------------------------------------------------+[/bold green]\n")
+
+
+def _render_dashboard(client: SxPlugClient, address: str = "") -> None:
+    """Render clean overview table and address box in ASCII style."""
+    if not HAS_RICH or console is None:
+        print("\n+------------------------------------------------------------------------------+")
+        print(f"| Active Plugins: {len(client.plugin_registry)} loaded ({len(client._commands)} commands registered)")
+        if address:
+            print(f"| Bot Address   : {address}")
+        print("| Gateway Status: ONLINE -- Listening for SimpleX events")
+        print("+------------------------------------------------------------------------------+\n")
+        return
+
+    t = Table(box=box.ASCII, border_style="green", expand=True)
+    t.add_column("COMPONENT", style="dim green", width=20)
+    t.add_column("DETAILS / VALUE", style="white")
+
+    plugins_count = len(client.plugin_registry)
+    total_cmds = len(client._commands)
+    plugins_summary = f"[green]{plugins_count} active[/green] [dim]({total_cmds} total commands registered)[/dim]"
+    if client.plugin_registry:
+        names = ", ".join(client.plugin_registry.keys())
+        plugins_summary += f" [dim]• {names}[/dim]"
+
+    t.add_row("Active Plugins", plugins_summary)
+    t.add_row("Isolation", "[cyan]Dedicated per-plugin .venv[/cyan]")
+    t.add_row("Relay SMP", "smp10.simplex.im")
+    t.add_row("Gateway Status", "[bold green]ONLINE[/bold green] [dim]-- Listening for SimpleX events[/dim]")
+    console.print(t)
+
+    if address:
+        p = Panel(
+            Text.from_markup(
+                f"[bold bright_green]{address}[/bold bright_green]\n\n"
+                "[dim green]> Scan or paste into SimpleX Chat app to connect immediately.[/dim green]"
+            ),
+            title="[bold green]+-- [ BOT INVITATION ADDRESS ] --+[/bold green]",
+            border_style="green",
+            box=box.ASCII,
+        )
+        console.print(p)
+    console.print(f"[dim green][{time.strftime('%H:%M:%S')}][/dim green] [bold green]>>>[/bold green] [bold white]sxplug is ready and listening...[/bold white]\n")
+
+
 # =============================================================================
 # SIMPLEX HUB CLIENT (CENTRAL MANAGER)
 # =============================================================================
@@ -154,6 +222,12 @@ class SxPlugClient(Bot):
             except Exception as e:
                 logging.warning("Warning updating profile on SMP: %s", e)
         return False
+
+    async def _post_start(self, user: Any) -> None:
+        """Post-start hook: sync address and render UI dashboard."""
+        await super()._post_start(user)
+        addr = getattr(self, "_contact_link", None) or ""
+        _render_dashboard(self, addr)
 
 
 # Central SimpleX instance with persistent storage in ./data/my_bot
@@ -332,6 +406,8 @@ class PluginManager:
                 "commands": commands_registered,
             }
             logging.info("⚡ [sxplug] Plugin '%s' enabled! (%d commands)", repo_name, len(commands_registered))
+            if HAS_RICH and console:
+                console.print(f"[green]+[/green] [bold]{repo_name}[/bold]: loaded in dedicated environment [dim]({len(commands_registered)} commands)[/dim]")
             return True
         except Exception as e:
             logging.error("❌ Error initializing plugin %s: %s", repo_name, e, exc_info=True)
@@ -392,16 +468,13 @@ async def handle_text(msg: TextMessage) -> None:
 # =============================================================================
 def start() -> None:
     """Synchronize plugins and start the SimpleX bot hub."""
-    print("\n" + "=" * 65)
-    print("⚡ Starting sxplug (Plugin Manager for SimpleX)...")
-    print("=" * 65)
+    _render_banner()
 
-    manager.sync_all(PLUGINS)
-
-    print("-" * 65)
-    print(f"✅ Total plugins loaded: {len(hub.plugin_registry)}")
-    print(f"✅ Total commands registered: {len(hub._commands)}")
-    print("=" * 65)
+    if HAS_RICH and console:
+        with console.status("[bold green]Synchronizing plugins and dependencies...", spinner="dots"):
+            manager.sync_all(PLUGINS)
+    else:
+        manager.sync_all(PLUGINS)
 
     hub.run()
 
