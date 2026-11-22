@@ -44,12 +44,16 @@ def test_dir_size_str(tmp_path: Path):
     d = tmp_path / "test_plugin_dir"
     d.mkdir()
     (d / "plugin.py").write_bytes(b"x" * 2048)  # 2 KB
-    # Ignore .venv and .git
+    # Include .venv files in total size
     venv = d / ".venv"
     venv.mkdir()
-    (venv / "huge.bin").write_bytes(b"x" * 1024 * 1024)
+    (venv / "huge.bin").write_bytes(b"x" * 1024 * 1024)  # 1 MB
+    # .git should still be ignored
+    git_dir = d / ".git"
+    git_dir.mkdir()
+    (git_dir / "objects.bin").write_bytes(b"x" * 5 * 1024 * 1024)
     res = sx._dir_size_str(str(d))
-    assert "2.0 KB" in res
+    assert "1.0 MB" in res
 
 
 def test_lazy_client_permissions_and_sync():

@@ -153,12 +153,12 @@ def _repo_name_from_url(url: str) -> str:
 
 
 def _dir_size_str(path: str) -> str:
-    """Calculate directory size in human-readable format, ignoring caches and venvs."""
+    """Calculate total directory size including dedicated .venv in human-readable format."""
     if not path or not os.path.exists(path):
         return "0 B"
     total = 0
     for root, dirs, files in os.walk(path):
-        dirs[:] = [d for d in dirs if d not in (".venv", ".git", "__pycache__")]
+        dirs[:] = [d for d in dirs if d != ".git"]
         for f in files:
             fp = os.path.join(root, f)
             if not os.path.islink(fp) and os.path.exists(fp):
